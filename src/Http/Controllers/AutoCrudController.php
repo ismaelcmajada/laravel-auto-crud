@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\Record;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\DynamicFormRequest;
+use Ismaelcmajada\LaravelAutoCrud\Http\Requests\DynamicFormRequest;
 
 class AutoCrudController extends Controller
 {
