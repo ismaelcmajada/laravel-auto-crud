@@ -3,8 +3,8 @@
 namespace Ismaelcmajada\LaravelAutoCrud\Models\Traits;
 
 use Illuminate\Support\Facades\Schema;
-use App\Casts\DateTimeWithUserTimezone;
-use App\Casts\DateWithUserTimezone;
+use Ismaelcmajada\LaravelAutoCrud\Casts\DateTimeWithUserTimezone;
+use Ismaelcmajada\LaravelAutoCrud\Casts\DateWithUserTimezone;
 use App\Models\Record;
 
 trait AutoCrud
