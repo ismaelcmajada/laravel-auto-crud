@@ -1,6 +1,6 @@
 <?php
 
-namespace Ismaelcmajada\LaravelAutoCrud\Traits;
+namespace Ismaelcmajada\LaravelAutoCrud\Models\Traits;
 
 use Illuminate\Support\Facades\Schema;
 use App\Casts\DateTimeWithUserTimezone;
