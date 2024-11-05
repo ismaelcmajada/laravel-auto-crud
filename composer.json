@@ -1,0 +1,22 @@
+{
+  "name": "ismaelcmajada/laravel-auto-crud",
+  "description": "Automated cruds based on laravel, vue and inertia",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Ismaelcmajada\\LaravelAutoCrud\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "ismaelcmajada",
+      "email": "ismaelcmajada@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=7.4",
+    "illuminate/database": "^8.0|^9.0|^10.0|^11.0",
+    "illuminate/support": "^8.0|^9.0|^10.0|^11.0"
+  }
+}
