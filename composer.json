@@ -22,7 +22,8 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Ismaelcmajada\\LaravelAutoCrud\\AutoCrudServiceProvider"
+        "Ismaelcmajada\\LaravelAutoCrud\\AutoCrudServiceProvider",
+        "Ismaelcmajada\\LaravelAutoCrud\\ModelScanServiceProvider"
       ]
     }
   }
