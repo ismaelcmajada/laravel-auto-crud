@@ -62,7 +62,11 @@ trait AutoCrud
 
     public static function getEndpoint()
     {
-        return static::$endPoint;
+        $modelName = lcfirst(
+            str_replace('App\\Models\\', '', static::class)
+        );
+
+        return 'laravel-auto-crud/' . $modelName;
     }
 
     abstract protected static function getFields();
