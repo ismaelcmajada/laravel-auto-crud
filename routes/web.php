@@ -13,6 +13,9 @@ Route::middleware('web')->group(function () {
     Route::get('/laravel-auto-crud/public/images/{model}/{field}/{id}', [ImageController::class, 'publicImage']);
     Route::get('/laravel-auto-crud/public/files/{model}/{field}/{id}', [FileController::class, 'publicFile']);
 
+    Route::middleware(['auth', 'checkForbiddenActions'])->prefix('dashboard')->group(function () {
+        Route::get('/{model}', [AutoCrudController::class, 'index'])->name('laravel-auto-crud.model.index');
+    });
 
     Route::middleware(['auth', 'checkForbiddenActions'])->prefix('laravel-auto-crud')->group(function () {
 
@@ -31,7 +34,6 @@ Route::middleware('web')->group(function () {
 
         Route::get('/{model}/export-excel', [AutoCrudController::class, 'exportExcel'])->name('laravel-auto-crud.model.exportExcel');
 
-        Route::get('/{model}', [AutoCrudController::class, 'index'])->name('laravel-auto-crud.model.index');
         Route::get('/{model}/all', [AutoCompleteController::class, 'getAll'])->name('laravel-auto-crud.model.all');
         Route::get('/{model}/{id}', [AutoCrudController::class, 'getItem'])->name('laravel-auto-crud.model.getItem');
         Route::post('/{model}', [AutoCrudController::class, 'store'])->name('laravel-auto-crud.model.store');
