@@ -17,13 +17,13 @@ class AutoCrudServiceProvider extends ServiceProvider
 
         $this->publishes([
             // Vue Components
-            __DIR__ . '/../resources/js/Components' => resource_path('js/Components'),
+            __DIR__ . '/../resources/js/Components/LaravelAutoCrud' => resource_path('js/Components/LaravelAutoCrud'),
 
             // JavaScript Utilities
-            __DIR__ . '/../resources/js/Utils' => resource_path('js/Utils'),
+            __DIR__ . '/../resources/js/Utils/LaravelAutoCrud' => resource_path('js/Utils/LaravelAutoCrud'),
 
             // Composables
-            __DIR__ . '/../resources/js/Composables' => resource_path('js/Composables'),
+            __DIR__ . '/../resources/js/Composables/LaravelAutoCrud' => resource_path('js/Composables/LaravelAutoCrud'),
         ], 'laravel-auto-crud');
     }
 
