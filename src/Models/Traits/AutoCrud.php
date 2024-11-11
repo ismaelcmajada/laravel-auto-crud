@@ -69,6 +69,13 @@ trait AutoCrud
         return "/laravel-auto-crud/{$modelName}";
     }
 
+    public static function getModelName()
+    {
+        return lcfirst(
+            str_replace('App\\Models\\', '', static::class)
+        );
+    }
+
     abstract protected static function getFields();
 
     public static function getCustomRules()
