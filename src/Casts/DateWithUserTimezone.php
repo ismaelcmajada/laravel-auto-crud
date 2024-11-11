@@ -29,7 +29,7 @@ class DateWithUserTimezone implements CastsAttributes
         }
 
         // Obtener la zona horaria del usuario logueado
-        $timezone = auth()->user()->timezone ?? env('DEFAULT_USER_TIMEZONE', config('app.timezone'));
+        $timezone = auth()->user()->timezone ?? config('laravel-auto-crud.timezone');
 
         // Convertir la fecha a la zona horaria del usuario
         return Carbon::parse($value)->setTimezone($timezone)->format($this->format);

@@ -16,6 +16,10 @@ class AutoCrudServiceProvider extends ServiceProvider
         $this->registerMiddleware();
 
         $this->publishes([
+            __DIR__ . '/../config/laravel-auto-crud.php' => config_path('laravel-auto-crud.php'),
+        ], 'laravel-auto-crud-config');
+
+        $this->publishes([
             // Vue Components
             __DIR__ . '/../resources/js/Components/LaravelAutoCrud' => resource_path('js/Components/LaravelAutoCrud'),
 
