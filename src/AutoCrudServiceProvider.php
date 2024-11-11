@@ -14,6 +14,17 @@ class AutoCrudServiceProvider extends ServiceProvider
 
         // Registrar el middleware
         $this->registerMiddleware();
+
+        $this->publishes([
+            // Vue Components
+            __DIR__ . '/../resources/js/Components' => resource_path('js/Components'),
+
+            // JavaScript Utilities
+            __DIR__ . '/../resources/js/Utils' => resource_path('js/Utils'),
+
+            // Composables
+            __DIR__ . '/../resources/js/Composables' => resource_path('js/Composables'),
+        ], 'laravel-auto-crud');
     }
 
     public function register()

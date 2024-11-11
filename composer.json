@@ -26,5 +26,11 @@
         "Ismaelcmajada\\LaravelAutoCrud\\ModelScanServiceProvider"
       ]
     }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php artisan package:discover --ansi",
+      "@php artisan vendor:publish --tag=laravel-auto-crud --force"
+    ]
   }
 }
