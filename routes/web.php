@@ -13,10 +13,6 @@ Route::middleware('web')->group(function () {
     Route::get('/laravel-auto-crud/public/images/{model}/{field}/{id}', [ImageController::class, 'publicImage']);
     Route::get('/laravel-auto-crud/public/files/{model}/{field}/{id}', [FileController::class, 'publicFile']);
 
-    Route::middleware(['auth', 'checkForbiddenActions'])->prefix('dashboard')->group(function () {
-        Route::get('/{model}', [AutoCrudController::class, 'index'])->name('laravel-auto-crud.model.index');
-    });
-
     Route::middleware(['auth', 'checkForbiddenActions'])->prefix('laravel-auto-crud')->group(function () {
 
         Route::get('/private/images/{model}/{field}/{id}', [ImageController::class, 'privateImage']);
