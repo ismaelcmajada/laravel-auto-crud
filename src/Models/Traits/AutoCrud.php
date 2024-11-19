@@ -5,7 +5,7 @@ namespace Ismaelcmajada\LaravelAutoCrud\Models\Traits;
 use Illuminate\Support\Facades\Schema;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateTimeWithUserTimezone;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateWithUserTimezone;
-use App\Models\Record;
+use Ismaelcmajada\LaravelAutoCrud\Models\Record;
 
 trait AutoCrud
 {
