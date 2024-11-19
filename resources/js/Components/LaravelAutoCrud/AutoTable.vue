@@ -36,7 +36,8 @@ const model = computed(() => {
 })
 
 const forbiddenActions =
-  model.value.forbiddenActions[page.props.auth.user.role] ?? []
+  model.value.forbiddenActions[page.props.auth.user.laravel_auto_crud_role] ??
+  []
 
 const {
   endPoint,
