@@ -270,7 +270,7 @@ if (props.itemsPerPage) tableData.itemsPerPage = props.itemsPerPage
         <tr>
           <td
             v-for="header in model.tableHeaders.filter(
-              (header) => header.key != 'actions'
+              (header) => header.key != 'actions' || !header.searchable
             )"
             :key="header.key"
           >
@@ -289,7 +289,7 @@ if (props.itemsPerPage) tableData.itemsPerPage = props.itemsPerPage
       <template
         v-slot:[`item.${header.key}`]="{ item }"
         v-for="header in model.tableHeaders.filter(
-          (header) => header.key !== 'actions' || !header.searchable
+          (header) => header.key !== 'actions'
         )"
       >
         <slot :name="`item.${header.key}`" :item="item">
