@@ -270,7 +270,7 @@ if (props.itemsPerPage) tableData.itemsPerPage = props.itemsPerPage
         <tr>
           <td
             v-for="header in model.tableHeaders.filter(
-              (header) => header.key != 'actions' || !header.searchable
+              (header) => header.key != 'actions' && header.searchable !== false
             )"
             :key="header.key"
           >
