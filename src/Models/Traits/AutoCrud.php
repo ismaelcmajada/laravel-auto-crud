@@ -253,6 +253,17 @@ trait AutoCrud
             ];
         }, static::getTableFields());
 
+        foreach (static::getExternalRelations() as $externalRelation) {
+            if(isset($externalRelation['table']) && $externalRelation['table']) {
+                $headers[] = [
+                    'title' => $externalRelation['name'],
+                    'key' => $externalRelation['relation'],
+                    'sortable' => false,
+                    'align' => 'center',
+                ];
+            }
+        }
+
         $headers[] = [
             'title' => 'Acciones',
             'key' => 'actions',
