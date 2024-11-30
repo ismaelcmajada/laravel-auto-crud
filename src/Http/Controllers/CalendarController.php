@@ -30,7 +30,6 @@ class CalendarController extends Controller
         $startDate = request('start');
         $endDate = request('end');
 
-        // Aseguramos que las fechas no sean nulas y las convertimos a un formato manejable por la base de datos
         if ($startDate && $endDate) {
             $query->where(function ($query) use ($eventFields, $startDate, $endDate) {
                 $query->whereBetween($eventFields['start'], [$startDate, $endDate])
@@ -41,26 +40,53 @@ class CalendarController extends Controller
                     });
             });
         }
-        // Obtener eventos
+
         $items = $query->whereNotNull($eventFields['start'])->whereNotNull($eventFields['end'])->get();
 
-        $events = $items->map(function ($item) use ($eventFields) {
-            $event = [
-                'start' => $item->{$eventFields['start']},
-                'end' => $item->{$eventFields['end']},
-                'title' => $eventFields['title'],
-                'item' => $item,
-                'class' => 'cell',
-                'drag' => true,
-            ];
+        $events = $items->flatMap(function ($item) use ($eventFields) {
+            $events = [];
 
-            return $event;
+            // Procesar el título reemplazando los placeholders con los valores reales
+            $title = $eventFields['title'];
+
+            if (isset($eventFields['separateEvents']) && $eventFields['separateEvents']) {
+                // Generar dos eventos separados
+                $startEvent = [
+                    'start' => $item->{$eventFields['start']},
+                    'end' => $item->{$eventFields['start']},
+                    'title' => $title,
+                    'item' => $item,
+                    'class' => 'cell',
+                    'drag' => true,
+                ];
+                $endEvent = [
+                    'start' => $item->{$eventFields['end']},
+                    'end' => $item->{$eventFields['end']},
+                    'title' => $title,
+                    'item' => $item,
+                    'class' => 'cell',
+                    'drag' => true,
+                ];
+                $events[] = $startEvent;
+                $events[] = $endEvent;
+            } else {
+                // Generar un evento de rango
+                $event = [
+                    'start' => $item->{$eventFields['start']},
+                    'end' => $item->{$eventFields['end']},
+                    'title' => $title,
+                    'item' => $item,
+                    'class' => 'cell',
+                    'drag' => true,
+                ];
+                $events[] = $event;
+            }
+            return $events;
         });
 
         return [
             'eventsData' => [
                 'items' => $events,
-
             ]
         ];
     }
