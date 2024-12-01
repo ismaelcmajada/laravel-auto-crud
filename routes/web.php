@@ -15,6 +15,7 @@ Route::middleware('web')->group(function () {
 
     Route::middleware(['auth', 'checkForbiddenActions'])->prefix('laravel-auto-crud')->group(function () {
 
+        
         Route::get('/private/images/{model}/{field}/{id}', [ImageController::class, 'privateImage']);
         Route::get('/private/files/{model}/{field}/{id}', [FileController::class, 'privateFile']);
 
@@ -23,6 +24,7 @@ Route::middleware('web')->group(function () {
         Route::post('/{model}/load-calendar-events', [CalendarController::class, 'loadEvents'])->name('laravel-auto-crud.model.load-calendar-events');
         Route::post('/{model}/load-autocomplete-items', [AutoCompleteController::class, 'loadAutocompleteItems'])->name('laravel-auto-crud.model.load-autocomplete-items');
         Route::post('/{model}/load-items', [AutoTableController::class, 'loadItems'])->name('laravel-auto-crud.model.load-items');
+        Route::get('/{model}/{id}', [AutoCrudController::class, 'getItem'])->name('laravel-auto-crud.model.getItem');
         Route::post('/{model}/{id}', [AutoCrudController::class, 'update'])->name('laravel-auto-crud.model.update');
         Route::post('/{model}/{id}/destroy', [AutoCrudController::class, 'destroy'])->name('laravel-auto-crud.model.destroy');
         Route::post('/{model}/{id}/permanent', [AutoCrudController::class, 'destroyPermanent'])->name('laravel-auto-crud.model.destroyPermanent');
@@ -31,7 +33,7 @@ Route::middleware('web')->group(function () {
         Route::get('/{model}/export-excel', [AutoCrudController::class, 'exportExcel'])->name('laravel-auto-crud.model.exportExcel');
 
         Route::get('/{model}/all', [AutoCompleteController::class, 'getAll'])->name('laravel-auto-crud.model.all');
-        Route::post('/get-item/{model}/{id}', [AutoCrudController::class, 'getItem'])->name('laravel-auto-crud.model.getItem');
+        
         Route::post('/{model}', [AutoCrudController::class, 'store'])->name('laravel-auto-crud.model.store');
 
         Route::post('/{model}/{id}/pivot/{externalRelation}/{item}', [AutoCrudController::class, 'updatePivot'])->name('laravel-auto-crud.model.updatePivot');
