@@ -56,7 +56,7 @@ class CalendarController extends Controller
                     'end' => $item->{$eventFields['start']},
                     'title' => $title,
                     'item' => $item,
-                    'class' => 'cell',
+                    'class' => $eventFields['startClass'] ?? 'cell',
                     'drag' => true,
                 ];
                 $endEvent = [
@@ -64,7 +64,7 @@ class CalendarController extends Controller
                     'end' => $item->{$eventFields['end']},
                     'title' => $title,
                     'item' => $item,
-                    'class' => 'cell',
+                    'class' => $eventFields['endClass'] ?? 'cell',
                     'drag' => true,
                 ];
                 $events[] = $startEvent;
