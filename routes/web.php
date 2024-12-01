@@ -24,7 +24,7 @@ Route::middleware('web')->group(function () {
         Route::post('/{model}/load-calendar-events', [CalendarController::class, 'loadEvents'])->name('laravel-auto-crud.model.load-calendar-events');
         Route::post('/{model}/load-autocomplete-items', [AutoCompleteController::class, 'loadAutocompleteItems'])->name('laravel-auto-crud.model.load-autocomplete-items');
         Route::post('/{model}/load-items', [AutoTableController::class, 'loadItems'])->name('laravel-auto-crud.model.load-items');
-        Route::get('/{model}/{id}', [AutoCrudController::class, 'getItem'])->name('laravel-auto-crud.model.getItem');
+        Route::get('/{model}/item/{id}', [AutoCrudController::class, 'getItem'])->name('laravel-auto-crud.model.getItem');
         Route::post('/{model}/{id}', [AutoCrudController::class, 'update'])->name('laravel-auto-crud.model.update');
         Route::post('/{model}/{id}/destroy', [AutoCrudController::class, 'destroy'])->name('laravel-auto-crud.model.destroy');
         Route::post('/{model}/{id}/permanent', [AutoCrudController::class, 'destroyPermanent'])->name('laravel-auto-crud.model.destroyPermanent');
