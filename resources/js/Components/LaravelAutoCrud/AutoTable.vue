@@ -1,6 +1,7 @@
 <script setup>
 import AutoFormDialog from "./AutoFormDialog.vue"
 import AutoForm from "./AutoForm.vue"
+import AutoExternalRelation from "./AutoExternalRelation.vue"
 import DestroyDialog from "./DestroyDialog.vue"
 import RestoreDialog from "./RestoreDialog.vue"
 import DestroyPermanentDialog from "./DestroyPermanentDialog.vue"
@@ -29,7 +30,12 @@ const props = defineProps([
   "itemsPerPageOptions",
 ])
 
-const emit = defineEmits(["closeDialog", "openDialog", "formChange"])
+const emit = defineEmits([
+  "closeDialog",
+  "openDialog",
+  "formChange",
+  "update:item",
+])
 
 const model = computed(() => {
   return props.model
@@ -101,6 +107,10 @@ if (props.itemsPerPageOptions)
   itemsPerPageOptions.value = props.itemsPerPageOptions
 
 if (props.itemsPerPage) tableData.itemsPerPage = props.itemsPerPage
+
+watch(item, (value) => {
+  emit("update:item", value)
+})
 </script>
 
 <template>
@@ -160,6 +170,19 @@ if (props.itemsPerPage) tableData.itemsPerPage = props.itemsPerPage
             <template #append="slotProps">
               <slot name="auto-form-dialog.auto-form.append" v-bind="slotProps">
               </slot>
+            </template>
+
+            <template
+              v-for="relation in model.externalRelations"
+              :key="relation.relation"
+              v-slot:[`auto-external-relation.${relation.relation}.actions`]="{
+                item,
+              }"
+            >
+              <slot
+                :name="`auto-external-relation.${relation.relation}.actions`"
+                :item="item"
+              ></slot>
             </template>
           </auto-form>
         </slot>

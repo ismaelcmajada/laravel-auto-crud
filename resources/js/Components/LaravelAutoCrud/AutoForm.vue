@@ -443,7 +443,10 @@ watch(isFormDirty, (value) => {
 
         <v-autocomplete
           v-else-if="
-            field.relation && !field.comboField && !field.relation.serverSide
+            field.relation &&
+            !field.comboField &&
+            !field.relation.serverSide &&
+            !field.relation.polymorphic
           "
           :items="
             props.filteredItems?.[field.relation.relation]
@@ -577,9 +580,16 @@ watch(isFormDirty, (value) => {
     v-if="type === 'edit' && model.externalRelations.length > 0"
     v-for="relation in model.externalRelations"
   >
-    <v-divider :thickness="3" class="mt-2"></v-divider>
+    <v-divider
+      :thickness="3"
+      class="mt-2"
+      v-if="relation.form === true || relation.form === undefined"
+    ></v-divider>
     <auto-external-relation
-      v-if="type === 'edit'"
+      v-if="
+        type === 'edit' &&
+        (relation.form === true || relation.form === undefined)
+      "
       :endPoint="model.endPoint"
       :item="item"
       :externalRelation="relation"
@@ -588,6 +598,13 @@ watch(isFormDirty, (value) => {
       :customItemProps="props.customItemProps"
       :withTitle="false"
     >
+      <template v-slot:[`${relation.relation}.actions`]="{ item }">
+        <slot
+          :name="`auto-external-relation.${relation.relation}.actions`"
+          :item="item"
+        >
+        </slot>
+      </template>
     </auto-external-relation>
   </div>
 </template>

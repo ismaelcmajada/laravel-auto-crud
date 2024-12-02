@@ -410,6 +410,11 @@ getItems()
         </v-chip>
       </v-col>
       <v-col class="text-end">
+        <slot
+          :name="`${props.externalRelation.relation}.actions`"
+          :item="relationItem"
+        >
+        </slot>
         <v-btn
           v-if="props.externalRelation.pivotFields"
           icon

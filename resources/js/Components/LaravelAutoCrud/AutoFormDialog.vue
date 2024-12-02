@@ -2,6 +2,7 @@
 import AutoForm from "./AutoForm.vue"
 import { computed, ref } from "vue"
 import { usePage } from "@inertiajs/vue3"
+import AutoExternalRelation from "./AutoExternalRelation.vue"
 
 const page = usePage()
 
@@ -38,7 +39,7 @@ const model = computed(() => {
 const show = computed({
   get: () => props.show,
   set: (value) => {
-    emit("update:show", value)
+    emit("update:show")
     if (!value) {
       item.value = null
     }
@@ -120,6 +121,19 @@ const handleIsFormDirty = (value) => {
               </template>
               <template #append="slotProps">
                 <slot name="auto-form.append" v-bind="slotProps"> </slot>
+              </template>
+
+              <template
+                v-for="relation in model.externalRelations"
+                :key="relation.relation"
+                v-slot:[`auto-external-relation.${relation.relation}.actions`]="{
+                  item,
+                }"
+              >
+                <slot
+                  :name="`auto-external-relation.${relation.relation}.actions`"
+                  :item="item"
+                ></slot>
               </template>
             </auto-form>
           </slot>
