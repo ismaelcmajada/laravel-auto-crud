@@ -115,6 +115,9 @@ class AutoTableController extends Controller
                 // Campo de una relación directa
                 $relationName = $fieldParts[0];
                 $fieldName = $fieldParts[1];
+
+                dd($query->getModel());
+
                 $query->whereHas($relationName, function ($q) use ($fieldName, $value) {
                     $q->where($fieldName, 'LIKE', '%' . $value . '%');
                 });
