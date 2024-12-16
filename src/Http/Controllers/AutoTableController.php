@@ -96,6 +96,18 @@ class AutoTableController extends Controller
 
     private function applyDynamicSearch($query, $relationInfo, $searchKey, $value)
     {
+
+        $model = $query->getModel();
+    
+        // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
+        $scopeMethod = 'search' . \Illuminate\Support\Str::studly($searchKey);
+
+        // Verifica si el modelo tiene definido ese scope
+        if (method_exists($model, 'scope'.$scopeMethod)) {
+            // Aplica la búsqueda custom
+            return $query->$scopeMethod($value);
+        }
+
         if (strpos($searchKey, '{') === false) {
             // Es un campo directo
             $fieldParts = explode('.', $searchKey);
