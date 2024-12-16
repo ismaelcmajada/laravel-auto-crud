@@ -56,6 +56,7 @@ const hiddenFormFieldsLength = computed(() => {
 })
 
 const relations = ref({})
+const comboboxItems = ref({})
 const storeShortcutShows = ref({})
 const storeExternalShortcutShows = ref({})
 
@@ -72,6 +73,22 @@ const getRelations = () => {
       relations.value[field.field] = response.data
     })
   })
+}
+
+const getComboboxItems = () => {
+  const comboboxFields = filteredFormFields.value.filter(
+    (field) => field.type === "combobox"
+  )
+
+  comboboxFields.forEach((field) => {
+    axios.get(`${field.endPoint}/all`).then((response) => {
+      comboboxItems.value[field.field] = response.data
+    })
+  })
+}
+
+const mapComboboxItems = (field, items) => {
+  return items?.map((item) => item[field.itemTitle])
 }
 
 const form = ref(false)
@@ -265,6 +282,7 @@ const updateComboField = (field, value) => {
 }
 
 getRelations()
+getComboboxItems()
 
 const isFormDirty = computed(() => {
   return formData.isDirty
@@ -310,7 +328,8 @@ watch(isFormDirty, (value) => {
             field.type !== 'select' &&
             field.type !== 'text' &&
             field.type !== 'image' &&
-            field.type !== 'file'
+            field.type !== 'file' &&
+            field.type !== 'combobox'
           "
           :label="field.rules?.required ? field.name + ' *' : field.name"
           v-model="formData[field.field]"
@@ -440,6 +459,22 @@ watch(isFormDirty, (value) => {
           v-model="formData[field.field]"
           :rules="getFieldRules(formData[field.field], field)"
         ></v-textarea>
+
+        <v-combobox
+          v-else-if="field.type === 'combobox'"
+          :items="
+            props.filteredItems?.[field.field]
+              ? mapComboboxItems(
+                  field,
+                  props.filteredItems[field.field](comboboxItems[field.field])
+                )
+              : mapComboboxItems(field, comboboxItems[field.field])
+          "
+          :label="field.rules?.required ? field.name + ' *' : field.name"
+          :custom-filter="props.customFilters?.[field.field]"
+          v-model="formData[field.field]"
+          :rules="getFieldRules(formData[field.field], field)"
+        ></v-combobox>
 
         <v-autocomplete
           v-else-if="

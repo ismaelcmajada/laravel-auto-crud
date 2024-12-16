@@ -28,6 +28,7 @@ const props = defineProps([
   "customItemProps",
   "itemsPerPage",
   "itemsPerPageOptions",
+  "customHeaders",
 ])
 
 const emit = defineEmits([
@@ -39,6 +40,30 @@ const emit = defineEmits([
 
 const model = computed(() => {
   return props.model
+})
+
+const finalHeaders = computed(() => {
+  const originalHeaders = [...model.value.tableHeaders]
+
+  // Buscar el índice de la columna con key 'actions'
+  const actionsIndex = originalHeaders.findIndex((h) => h.key === "actions")
+
+  // Asegurar que customHeaders es array
+  const extraHeaders = Array.isArray(props.customHeaders)
+    ? props.customHeaders
+    : []
+
+  if (actionsIndex === -1) {
+    // Si no se encuentra 'actions', simplemente concatena al final
+    return [...originalHeaders, ...extraHeaders]
+  } else {
+    // Insertar justo antes de la columna 'actions'
+    return [
+      ...originalHeaders.slice(0, actionsIndex),
+      ...extraHeaders,
+      ...originalHeaders.slice(actionsIndex),
+    ]
+  }
 })
 
 const forbiddenActions =
@@ -233,7 +258,7 @@ watch(item, (value) => {
     <v-data-table-server
       multi-sort
       :loading="loading"
-      :headers="model.tableHeaders"
+      :headers="finalHeaders"
       :items="tableData.items"
       :items-length="tableData.itemsLength"
       :items-per-page-options="itemsPerPageOptions"
@@ -292,7 +317,7 @@ watch(item, (value) => {
       <template v-if="!mobile" v-slot:thead>
         <tr>
           <td
-            v-for="header in model.tableHeaders.filter(
+            v-for="header in finalHeaders.filter(
               (header) => header.key != 'actions' && header.searchable !== false
             )"
             :key="header.key"
@@ -311,7 +336,7 @@ watch(item, (value) => {
 
       <template
         v-slot:[`item.${header.key}`]="{ item }"
-        v-for="header in model.tableHeaders.filter(
+        v-for="header in finalHeaders.filter(
           (header) => header.key !== 'actions'
         )"
       >
