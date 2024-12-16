@@ -113,7 +113,6 @@ class AutoTableController extends Controller
 
         if (strpos($searchKey, '{') === false) {
             // Es un campo directo
-            dd($searchKey);
             $fieldParts = explode('.', $searchKey);
             if (count($fieldParts) == 2) {
                 // Campo de una relación directa
@@ -137,7 +136,7 @@ class AutoTableController extends Controller
                 
             }
         } else {
-            dd($searchKey);
+
             preg_match_all('/\{([\w\.]+)\}/', $searchKey, $matches);
             $fields = $matches[1];
             $literals = preg_split('/\{[\w\.]+\}/', $searchKey);
