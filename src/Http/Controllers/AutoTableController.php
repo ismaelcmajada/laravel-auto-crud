@@ -116,12 +116,14 @@ class AutoTableController extends Controller
                 $relationName = $fieldParts[0];
                 $fieldName = $fieldParts[1];
 
-                dd($query->getModel());
+                
 
                 $query->whereHas($relationName, function ($q) use ($fieldName, $value) {
                     $q->where($fieldName, 'LIKE', '%' . $value . '%');
                 });
             } else {
+
+                dd($query->getModel());
                 // Campo de la tabla principal
                 $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $value . '%');
             }
