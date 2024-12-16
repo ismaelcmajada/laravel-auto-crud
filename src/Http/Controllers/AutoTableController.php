@@ -120,14 +120,13 @@ class AutoTableController extends Controller
                 $relationName = $fieldParts[0];
                 $fieldName = $fieldParts[1];
 
-                
-
                 $query->whereHas($relationName, function ($q) use ($fieldName, $value) {
                     $q->where($fieldName, 'LIKE', '%' . $value . '%');
                 });
             } else {
-
+               
                 foreach ($fields as $field) {
+                    dd($field);
                     if ($field['field'] === $searchKey && $field['type'] === 'date') {
                         $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d/%m/%Y') LIKE '%$value%'");
                     } else {
