@@ -345,7 +345,7 @@ class AutoTableController extends Controller
         foreach ($modelInstance::getTableFields() as $field) {
             if ($field['field'] === $key) {
                 $relationInfo = isset($field['relation']) ? $field['relation'] : null;
-                $searchKey = isset($relationInfo['tableKey']) ? $relationInfo['tableKey'] : '{' . $key . '}';
+                $searchKey = isset($relationInfo['tableKey']) ? $relationInfo['tableKey'] : $key;
                 return [
                     'relationInfo' => $relationInfo,
                     'searchKey' => $searchKey,
@@ -362,7 +362,7 @@ class AutoTableController extends Controller
         foreach ($modelInstance::getTableFields() as $field) {
             if ($field['field'] === $key) {
                 $relationInfo = isset($field['relation']) ? $field['relation'] : null;
-                $orderKey = isset($relationInfo['tableKey']) ? $relationInfo['tableKey'] : '{' . $key . '}';
+                $orderKey = isset($relationInfo['tableKey']) ? $relationInfo['tableKey'] : $key;
                 return [
                     'relationInfo' => $relationInfo,
                     'orderKey' => $orderKey,
