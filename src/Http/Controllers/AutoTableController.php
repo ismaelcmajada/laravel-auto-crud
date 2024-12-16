@@ -100,7 +100,6 @@ class AutoTableController extends Controller
         $model = $query->getModel();
 
         $fields = $model::getTableFields();
-        dd($fields);
     
         /*
         // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
@@ -114,6 +113,7 @@ class AutoTableController extends Controller
 
         if (strpos($searchKey, '{') === false) {
             // Es un campo directo
+            dd($searchKey);
             $fieldParts = explode('.', $searchKey);
             if (count($fieldParts) == 2) {
                 // Campo de una relación directa
@@ -137,7 +137,7 @@ class AutoTableController extends Controller
                 
             }
         } else {
-
+            dd("fuera");
             preg_match_all('/\{([\w\.]+)\}/', $searchKey, $matches);
             $fields = $matches[1];
             $literals = preg_split('/\{[\w\.]+\}/', $searchKey);
