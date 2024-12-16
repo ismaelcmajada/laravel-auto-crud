@@ -137,7 +137,7 @@ class AutoTableController extends Controller
                 
             }
         } else {
-            dd("fuera");
+            dd($searchKey);
             preg_match_all('/\{([\w\.]+)\}/', $searchKey, $matches);
             $fields = $matches[1];
             $literals = preg_split('/\{[\w\.]+\}/', $searchKey);
