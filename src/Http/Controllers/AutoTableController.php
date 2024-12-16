@@ -127,7 +127,9 @@ class AutoTableController extends Controller
                
                 foreach ($fields as $field) {
                     if ($field['field'] === $searchKey && $field['type'] === 'date') {
-                        return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d/%m/%Y') LIKE '%$value%'");
+                        return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y') LIKE '%$value%'");
+                    } else if ($field['field'] === $searchKey && $field['type'] === 'datetime') {
+                        return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y %H:%i') LIKE '%$value%'");
                     }
                 }   
 
