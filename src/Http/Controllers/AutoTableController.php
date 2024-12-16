@@ -100,6 +100,7 @@ class AutoTableController extends Controller
         $model = $query->getModel();
 
         $fields = $model::getTableFields();
+        dd($fields);
     
         /*
         // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
