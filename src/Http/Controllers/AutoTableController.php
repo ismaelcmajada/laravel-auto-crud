@@ -111,6 +111,8 @@ class AutoTableController extends Controller
             return $query->$scopeMethod($value);
         }*/
 
+        dd($searchKey);
+
         if (strpos($searchKey, '{') === false) {
             // Es un campo directo
             $fieldParts = explode('.', $searchKey);
