@@ -101,6 +101,7 @@ class AutoTableController extends Controller
 
         $fields = $model::getTableFields();
     
+        /*
         // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
         $scopeMethod = 'search' . \Illuminate\Support\Str::studly($searchKey);
 
@@ -108,7 +109,7 @@ class AutoTableController extends Controller
         if (method_exists($model, 'scope'.$scopeMethod)) {
             // Aplica la búsqueda custom
             return $query->$scopeMethod($value);
-        }
+        }*/
 
         if (strpos($searchKey, '{') === false) {
             // Es un campo directo
