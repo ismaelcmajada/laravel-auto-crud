@@ -98,6 +98,8 @@ class AutoTableController extends Controller
     {
 
         $model = $query->getModel();
+
+        $fields = $model::getTableFields();
     
         // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
         $scopeMethod = 'search' . \Illuminate\Support\Str::studly($searchKey);
@@ -123,9 +125,14 @@ class AutoTableController extends Controller
                 });
             } else {
 
-                dd($query->getModel());
-                // Campo de la tabla principal
-                $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $value . '%');
+                foreach ($fields as $field) {
+                    if ($field['field'] === $searchKey && $field['type'] === 'date') {
+                        $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d/%m/%Y') LIKE '%$value%'");
+                    } else {
+                        $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $value . '%');
+                    }
+                }   
+                
             }
         } else {
 
