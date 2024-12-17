@@ -34,6 +34,20 @@ const storeExternalShortcutShow = ref(false)
 const pivotEditData = ref({})
 const pivotEditing = ref(null)
 
+const relations = ref({})
+
+const getRelations = () => {
+  const relationsFromFormFields = props.externalRelation.pivotFields?.filter(
+    (field) => field.relation && !field.relation.serverSide
+  )
+
+  relationsFromFormFields.forEach((field) => {
+    axios.get(`${field.relation.endPoint}/all`).then((response) => {
+      relations.value[field.field] = response.data
+    })
+  })
+}
+
 const item = ref(props.item)
 
 const getItems = async () => {
@@ -119,6 +133,7 @@ const removeItem = (value) => {
 }
 
 getItems()
+getRelations()
 </script>
 
 <template>
@@ -307,6 +322,7 @@ getItems()
       >
         <v-text-field
           v-if="
+            !field.relation &&
             field.type !== 'boolean' &&
             field.type !== 'date' &&
             field.type !== 'password' &&
@@ -362,6 +378,34 @@ getItems()
           v-model="pivotData[field.field]"
           :rules="getFieldRules(pivotData[field.field], field)"
         ></v-textarea>
+
+        <v-autocomplete
+          v-else-if="field.relation"
+          :items="
+            props.filteredItems?.[field.relation.relation]
+              ? props.filteredItems[field.relation.relation](
+                  relations[field.field]
+                )
+              : relations[field.field]
+          "
+          :label="field.rules?.required ? field.name + ' *' : field.name"
+          :item-props="props.customItemProps?.[field.relation.relation]"
+          :item-title="generateItemTitle(field.relation.formKey)"
+          :custom-filter="
+            (item, queryText, itemText) =>
+              searchByWords(
+                item,
+                queryText,
+                itemText,
+                props.customFilters?.[field.relation.relation]
+              )
+          "
+          item-value="id"
+          v-model="formData[field.field]"
+          :rules="getFieldRules(formData[field.field], field)"
+          @update:model-value="updateRelatedFields(field.field, $event)"
+        >
+        </v-autocomplete>
       </v-col>
       <v-col
         v-if="props.externalRelation.pivotFields"
@@ -471,6 +515,7 @@ getItems()
         >
           <v-text-field
             v-if="
+              !field.relation &&
               field.type !== 'boolean' &&
               field.type !== 'date' &&
               field.type !== 'password' &&
@@ -527,6 +572,34 @@ getItems()
             v-model="pivotEditData[field.field]"
             :rules="getFieldRules(pivotEditData[field.field], field)"
           ></v-textarea>
+
+          <v-autocomplete
+            v-else-if="field.relation"
+            :items="
+              props.filteredItems?.[field.relation.relation]
+                ? props.filteredItems[field.relation.relation](
+                    relations[field.field]
+                  )
+                : relations[field.field]
+            "
+            :label="field.rules?.required ? field.name + ' *' : field.name"
+            :item-props="props.customItemProps?.[field.relation.relation]"
+            :item-title="generateItemTitle(field.relation.formKey)"
+            :custom-filter="
+              (item, queryText, itemText) =>
+                searchByWords(
+                  item,
+                  queryText,
+                  itemText,
+                  props.customFilters?.[field.relation.relation]
+                )
+            "
+            item-value="id"
+            v-model="formData[field.field]"
+            :rules="getFieldRules(formData[field.field], field)"
+            @update:model-value="updateRelatedFields(field.field, $event)"
+          >
+          </v-autocomplete>
         </v-col>
         <v-col cols="12" class="text-center">
           <v-btn
