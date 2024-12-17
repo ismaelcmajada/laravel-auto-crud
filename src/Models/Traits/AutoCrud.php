@@ -99,6 +99,14 @@ trait AutoCrud
         foreach (static::$externalRelations as &$relation) {
 
             $relation['endPoint'] = $relation['model']::getEndpoint();
+
+            if (isset($relation['pivotFields'])) {
+                foreach ($relation['pivotFields'] as &$pivotField) {
+                    if (isset($pivotField['relation'])) {
+                        $pivotField['relation']['endPoint'] = $pivotField['relation']['model']::getEndpoint();
+                    }
+                }
+            }
         }
 
         return static::$externalRelations;
@@ -254,7 +262,7 @@ trait AutoCrud
         }, static::getTableFields());
 
         foreach (static::getExternalRelations() as $externalRelation) {
-            if(isset($externalRelation['table']) && $externalRelation['table']) {
+            if (isset($externalRelation['table']) && $externalRelation['table']) {
                 $headers[] = [
                     'title' => $externalRelation['name'],
                     'key' => $externalRelation['relation'],
