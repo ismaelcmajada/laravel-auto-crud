@@ -100,7 +100,7 @@ class AutoTableController extends Controller
         $model = $query->getModel();
 
         $fields = $model::getTableFields();
-    
+
         /*
         // Genera el nombre del posible scope: por ejemplo para 'myCustomKey' => 'searchMyCustomKey'
         $scopeMethod = 'search' . \Illuminate\Support\Str::studly($searchKey);
@@ -120,21 +120,29 @@ class AutoTableController extends Controller
                 $relationName = $fieldParts[0];
                 $fieldName = $fieldParts[1];
 
-                $query->whereHas($relationName, function ($q) use ($fieldName, $value) {
+                $query->whereHas($relationName, function ($q) use ($fieldName, $value, $fields, $searchKey) {
+
+                    foreach ($fields as $field) {
+                        if ($field['field'] === $searchKey && $field['type'] === 'date') {
+                            return $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y') LIKE '%$value%'");
+                        } else if ($field['field'] === $searchKey && $field['type'] === 'datetime') {
+                            return $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y %H:%i') LIKE '%$value%'");
+                        }
+                    }
+
                     $q->where($fieldName, 'LIKE', '%' . $value . '%');
                 });
             } else {
-               
+
                 foreach ($fields as $field) {
                     if ($field['field'] === $searchKey && $field['type'] === 'date') {
                         return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y') LIKE '%$value%'");
                     } else if ($field['field'] === $searchKey && $field['type'] === 'datetime') {
                         return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y %H:%i') LIKE '%$value%'");
                     }
-                }   
+                }
 
                 $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $value . '%');
-                
             }
         } else {
 
