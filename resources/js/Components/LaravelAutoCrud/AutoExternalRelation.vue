@@ -133,9 +133,6 @@ const removeItem = (value) => {
 }
 
 getItems()
-if (props.externalRelation.pivotFields) {
-  getRelations()
-}
 </script>
 
 <template>
@@ -380,33 +377,6 @@ if (props.externalRelation.pivotFields) {
           v-model="pivotData[field.field]"
           :rules="getFieldRules(pivotData[field.field], field)"
         ></v-textarea>
-
-        <v-autocomplete
-          v-else-if="field.relation"
-          :items="
-            props.filteredItems[props.externalRelation.relation]
-              ? props.filteredItems[props.externalRelation.relation](
-                  relations[field.field]
-                )
-              : relations[field.field]
-          "
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          :item-props="props.customItemProps?.[field.relation.relation]"
-          :item-title="generateItemTitle(field.relation.formKey)"
-          :custom-filter="
-            (item, queryText, itemText) =>
-              searchByWords(
-                item,
-                queryText,
-                itemText,
-                props.customFilters?.[field.relation.relation]
-              )
-          "
-          item-value="id"
-          v-model="pivotData[field.field]"
-          :rules="getFieldRules(pivotData[field.field], field)"
-        >
-        </v-autocomplete>
       </v-col>
       <v-col
         v-if="props.externalRelation.pivotFields"
@@ -573,33 +543,6 @@ if (props.externalRelation.pivotFields) {
             v-model="pivotEditData[field.field]"
             :rules="getFieldRules(pivotEditData[field.field], field)"
           ></v-textarea>
-
-          <v-autocomplete
-            v-else-if="field.relation"
-            :items="
-              props.filteredItems?.[field.relation.relation]
-                ? props.filteredItems[field.relation.relation](
-                    relations[field.field]
-                  )
-                : relations[field.field]
-            "
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            :item-props="props.customItemProps?.[field.relation.relation]"
-            :item-title="generateItemTitle(field.relation.formKey)"
-            :custom-filter="
-              (item, queryText, itemText) =>
-                searchByWords(
-                  item,
-                  queryText,
-                  itemText,
-                  props.customFilters?.[field.relation.relation]
-                )
-            "
-            item-value="id"
-            v-model="pivotEditData[field.field]"
-            :rules="getFieldRules(pivotEditData[field.field], field)"
-          >
-          </v-autocomplete>
         </v-col>
         <v-col cols="12" class="text-center">
           <v-btn
