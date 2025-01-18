@@ -10,6 +10,8 @@ import {
   searchByWords,
 } from "../../Utils/LaravelAutoCrud/autocompleteUtils"
 
+import { generateItemTitle as tableItemTitle } from "../../Utils/LaravelAutoCrud/datatableUtils"
+
 const props = defineProps([
   "item",
   "endPoint",
@@ -444,10 +446,20 @@ if (props.externalRelation.pivotFields) {
       >
         <v-chip>
           {{ field.name }}:
+          <template v-if="field.relation && relations[field.field]">
+            {{
+              tableItemTitle(
+                field.relation.formKey,
+                relations[field.field]?.find(
+                  (relation) => relation.id === relationItem.pivot[field.field]
+                )
+              )
+            }}
+          </template>
           <v-checkbox
             density="compact"
             class="mt-5"
-            v-if="field.type === 'boolean'"
+            v-else-if="field.type === 'boolean'"
             :model-value="Boolean(Number(relationItem.pivot[field.field]))"
             disabled
           ></v-checkbox>
