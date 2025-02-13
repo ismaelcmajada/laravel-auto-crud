@@ -9,11 +9,11 @@ class AutoCrudServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        // Cargar las rutas del paquete
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-
         // Registrar el middleware
         $this->registerMiddleware();
+
+        // Cargar las rutas del paquete
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
         $this->publishes([
             __DIR__ . '/../config/laravel-auto-crud.php' => config_path('laravel-auto-crud.php'),
