@@ -20,6 +20,7 @@ class CheckForbiddenActions
                 $forbiddenActions = $userRole ? $modelClass::getForbiddenActions()[$userRole] ?? [] : [];
                 $customForbiddenActions = $modelClass::getCustomForbiddenActions();
                 $action = explode('@', $request->route()->getActionName())[1];
+                dd($action);
                 $forbidden = false;
 
                 if (in_array('all', $forbiddenActions)) {
