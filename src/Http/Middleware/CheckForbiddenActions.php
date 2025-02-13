@@ -12,13 +12,12 @@ class CheckForbiddenActions
     {
         if ($request->route('model')) {
             $user = Auth::user();
-            $userRole = $user->laravel_auto_crud_role;
+            $userRole = $user->role;
             $model = $request->route('model');
             $modelClass = "App\\Models\\" . ucfirst($model);
 
             if (class_exists($modelClass)) {
                 $forbiddenActions = $userRole ? $modelClass::getForbiddenActions()[$userRole] ?? [] : [];
-                dd($user);
                 $customForbiddenActions = $modelClass::getCustomForbiddenActions();
                 $action = explode('@', $request->route()->getActionName())[1];
                 $forbidden = false;
