@@ -12,7 +12,7 @@ class CheckForbiddenActions
     {
         if ($request->route('model')) {
             $user = Auth::user();
-            $userRole = $user->role;
+            $userRole = $user->laravel_auto_crud_role;
             $model = $request->route('model');
             $modelClass = "App\\Models\\" . ucfirst($model);
 
