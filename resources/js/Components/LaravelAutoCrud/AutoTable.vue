@@ -192,6 +192,28 @@ watch(item, (value) => {
               >
               </slot>
             </template>
+
+            <template
+              v-for="field in model.value.formFields"
+              :key="field.field"
+              #[`field.${field.field}`]="fieldSlotProps"
+            >
+              <!-- 
+                Reexponemos un slot llamado:
+                "auto-form-dialog.auto-form.field.nombreCampo"
+
+                Si el padre lo define, se inyectará aquí.
+                De lo contrario, AutoForm.vue mostrará su fallback.
+              -->
+              <slot
+                :name="`auto-form-dialog.auto-form.field.${field.field}`"
+                v-bind="fieldSlotProps"
+              >
+                <!-- No ponemos fallback aquí, porque el fallback
+                     está en <AutoForm> mismo, en su <slot :name="field.xxx"> -->
+              </slot>
+            </template>
+
             <template #append="slotProps">
               <slot name="auto-form-dialog.auto-form.append" v-bind="slotProps">
               </slot>
