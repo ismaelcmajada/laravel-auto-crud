@@ -194,7 +194,7 @@ watch(item, (value) => {
             </template>
 
             <template
-              v-for="field in model.value.formFields"
+              v-for="field in model.formFields"
               :key="field.field"
               #[`field.${field.field}`]="fieldSlotProps"
             >
@@ -383,6 +383,15 @@ watch(item, (value) => {
 
       <template v-slot:item.actions="{ item }">
         <slot
+          name="item.actions.prepend"
+          :item="item"
+          :openDialog="openDialog"
+          :resetTable="resetTable"
+          :tableData="tableData"
+          :loadItems="loadItems"
+          :forbiddenActions="forbiddenActions"
+        ></slot>
+        <slot
           name="item.actions"
           :item="item"
           :openDialog="openDialog"
@@ -454,6 +463,15 @@ watch(item, (value) => {
             <v-tooltip activator="parent">Eliminar permanente</v-tooltip>
           </v-btn>
         </slot>
+        <slot
+          name="item.actions.append"
+          :item="item"
+          :openDialog="openDialog"
+          :resetTable="resetTable"
+          :tableData="tableData"
+          :loadItems="loadItems"
+          :forbiddenActions="forbiddenActions"
+        ></slot>
       </template>
     </v-data-table-server>
     <loading-overlay v-if="loading" />

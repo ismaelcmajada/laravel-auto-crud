@@ -313,7 +313,9 @@ watch(isFormDirty, (value) => {
           :formData="formData"
           :field="field"
           :item="item"
+          :type="type"
           :submit="submit"
+          :getFieldRules="getFieldRules"
         >
           <!-- Fallback que se muestra si el padre NO define este slot -->
           <!-- Aquí dentro va toda tu lógica habitual de if/else para cada type -->
