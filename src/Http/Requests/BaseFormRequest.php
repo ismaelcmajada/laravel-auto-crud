@@ -20,27 +20,41 @@ abstract class BaseFormRequest extends FormRequest
         $modelInstance = new $this->modelClass;
         $id = $this->route('id'); // Asumiendo que el ID del modelo viene en la ruta
         $itemId = $this->route('item'); // Para relaciones pivot, si aplica
+        $externalRelation = $this->route('externalRelation');
 
-        return $this->getValidationRules($modelInstance, $id, $itemId);
+        return $this->getValidationRules($modelInstance, $id, $itemId, $externalRelation);
     }
 
-    protected function getValidationRules($modelInstance, $id = null, $itemId = null)
+    protected function getValidationRules($modelInstance, $id = null, $itemId = null, $externalRelation = null)
     {
         $rules = [];
 
+        // Si NO hay $itemId, validamos los campos "propios" del modelo (no pivot).
         if (!$itemId) {
             foreach ($modelInstance::getFormFields() as $field) {
                 $fieldRules = $this->buildFieldRules($field, $modelInstance, $id);
                 $rules[$field['field']] = $fieldRules;
             }
-
             return $rules;
         }
 
+        // Si SÍ hay $itemId, entonces validamos la tabla pivot de UNA SOLA relación:
         foreach ($modelInstance::getExternalRelations() as $relation) {
+            // Verificamos si el 'relation' del modelo coincide con el 'externalRelation' del request
+            if ($relation['relation'] !== $externalRelation) {
+                continue; // ignorar el resto
+            }
+
+            // Para la relación que coincide, construimos las reglas de sus pivotFields
             if (isset($relation['pivotFields'])) {
                 foreach ($relation['pivotFields'] as $pivotField) {
-                    $fieldRules = $this->buildFieldRules($pivotField, $modelInstance, $id, $relation, $itemId);
+                    $fieldRules = $this->buildFieldRules(
+                        $pivotField,
+                        $modelInstance,
+                        $id,
+                        $relation,
+                        $itemId
+                    );
                     $rules[$pivotField['field']] = $fieldRules;
                 }
             }

@@ -119,6 +119,25 @@ const handleIsFormDirty = (value) => {
               <template #prepend="slotProps">
                 <slot name="auto-form.prepend" v-bind="slotProps"> </slot>
               </template>
+
+              <template
+                v-for="field in model.formFields"
+                :key="field.field"
+                #[`field.${field.field}`]="slotProps"
+              >
+                <!-- 
+                  Aquí, reexponemos un slot "auto-form.field.xxx" 
+                  de modo que 'AutoTable.vue' (o quien invoque) 
+                  pueda personalizarlo. 
+                -->
+                <slot
+                  :name="`auto-form.field.${field.field}`"
+                  v-bind="slotProps"
+                >
+                  <!-- fallback vacío -->
+                </slot>
+              </template>
+
               <template #append="slotProps">
                 <slot name="auto-form.append" v-bind="slotProps"> </slot>
               </template>

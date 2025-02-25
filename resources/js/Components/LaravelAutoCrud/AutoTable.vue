@@ -192,6 +192,28 @@ watch(item, (value) => {
               >
               </slot>
             </template>
+
+            <template
+              v-for="field in model.formFields"
+              :key="field.field"
+              #[`field.${field.field}`]="fieldSlotProps"
+            >
+              <!-- 
+                Reexponemos un slot llamado:
+                "auto-form-dialog.auto-form.field.nombreCampo"
+
+                Si el padre lo define, se inyectará aquí.
+                De lo contrario, AutoForm.vue mostrará su fallback.
+              -->
+              <slot
+                :name="`auto-form-dialog.auto-form.field.${field.field}`"
+                v-bind="fieldSlotProps"
+              >
+                <!-- No ponemos fallback aquí, porque el fallback
+                     está en <AutoForm> mismo, en su <slot :name="field.xxx"> -->
+              </slot>
+            </template>
+
             <template #append="slotProps">
               <slot name="auto-form-dialog.auto-form.append" v-bind="slotProps">
               </slot>
@@ -361,6 +383,15 @@ watch(item, (value) => {
 
       <template v-slot:item.actions="{ item }">
         <slot
+          name="item.actions.prepend"
+          :item="item"
+          :openDialog="openDialog"
+          :resetTable="resetTable"
+          :tableData="tableData"
+          :loadItems="loadItems"
+          :forbiddenActions="forbiddenActions"
+        ></slot>
+        <slot
           name="item.actions"
           :item="item"
           :openDialog="openDialog"
@@ -432,6 +463,15 @@ watch(item, (value) => {
             <v-tooltip activator="parent">Eliminar permanente</v-tooltip>
           </v-btn>
         </slot>
+        <slot
+          name="item.actions.append"
+          :item="item"
+          :openDialog="openDialog"
+          :resetTable="resetTable"
+          :tableData="tableData"
+          :loadItems="loadItems"
+          :forbiddenActions="forbiddenActions"
+        ></slot>
       </template>
     </v-data-table-server>
     <loading-overlay v-if="loading" />
