@@ -73,8 +73,8 @@ abstract class BaseFormRequest extends FormRequest
             case 'number':
                 $fieldRules[] = 'integer';
                 break;
-            case 'double':
-                $fieldRules[] = 'double';
+            case 'decimal':
+                $fieldRules[] = 'decimal';
                 break;
             case 'select':
                 if (isset($field['options'])) {

@@ -25,8 +25,6 @@ trait AutoCrud
                 $this->casts[$field['field']] = 'integer';
             } elseif ($field['type'] === 'number') {
                 $this->casts[$field['field']] = 'string';
-            } elseif ($field['type'] === 'double') {
-                $this->casts[$field['field']] = 'double';
             } elseif ($field['type'] === 'boolean') {
                 $this->casts[$field['field']] = 'boolean';
             } elseif ($field['type'] === 'password') {
