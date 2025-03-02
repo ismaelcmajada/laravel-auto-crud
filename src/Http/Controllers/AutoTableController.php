@@ -42,11 +42,28 @@ class AutoTableController extends Controller
         if (!empty($search)) {
             foreach ($search as $key => $value) {
                 if (!empty($value)) {
+
+                    // 1) Check si en el modelo hay "scopeSearchXxx"
+                    $scopeMethod = 'search' . Str::studly($key);
+                    if (method_exists($modelInstance, 'scope' . $scopeMethod)) {
+                        // Aplica la búsqueda usando el scope
+                        $query->$scopeMethod($value);
+                        // Y sigue con el siguiente campo de búsqueda, no hace falta getFieldSearchInfo
+                        continue;
+                    }
+
+                    // 2) Si no existe un scope custom, entonces probamos la búsqueda estándar
                     $fieldSearchInfo = $this->getFieldSearchInfo($modelInstance, $key);
 
                     if ($fieldSearchInfo !== null) {
-                        $this->applyDynamicSearch($query, $fieldSearchInfo['relationInfo'], $fieldSearchInfo['searchKey'], $value);
+                        $this->applyDynamicSearch(
+                            $query,
+                            $fieldSearchInfo['relationInfo'],
+                            $fieldSearchInfo['searchKey'],
+                            $value
+                        );
                     }
+                    // Si $fieldSearchInfo === null y tampoco hay scope, no se hace nada.
                 }
             }
         }
@@ -96,17 +113,9 @@ class AutoTableController extends Controller
 
     private function applyDynamicSearch($query, $relationInfo, $searchKey, $value)
     {
+
         $model = $query->getModel();
 
-        // 1) Detectamos si hay un método scopeSearchXxx en el modelo
-        $scopeMethod = 'search' . \Illuminate\Support\Str::studly($searchKey);
-        if (method_exists($model, 'scope' . $scopeMethod)) {
-            // Aplica la búsqueda custom y retornamos, para no procesar la estándar
-            return $query->$scopeMethod($value);
-        }
-
-        // Si no existe scope custom, seguimos con la lógica habitual
-        // --------------------------------------------------------------------------------
         $fields = $model::getTableFields();
 
         if (strpos($searchKey, '{') === false) {
