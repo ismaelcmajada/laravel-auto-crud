@@ -75,17 +75,33 @@ class AutoTableController extends Controller
                     $key = $sort['key'];
                     $order = $sort['order'];
 
+                    // 1) Primero comprobamos si hay un scope de orden custom en el modelo
+                    $scopeMethod = 'order' . Str::studly($key);
+                    if (method_exists($modelInstance, 'scope' . $scopeMethod)) {
+                        // Si existe, aplicamos el scope y seguimos con el siguiente
+                        $query->$scopeMethod($order);
+                        continue;
+                    }
+
+                    // 2) Si NO existe el scope, hacemos la lógica normal: getFieldOrderInfo
                     $fieldOrderInfo = $this->getFieldOrderInfo($modelInstance, $key);
 
                     if ($fieldOrderInfo !== null) {
-                        $this->applyDynamicOrder($query, $fieldOrderInfo['relationInfo'], $fieldOrderInfo['orderKey'], $order);
+                        // Ordenar usando la lógica de applyDynamicOrder (relaciones, CONCAT_WS, etc.)
+                        $this->applyDynamicOrder(
+                            $query,
+                            $fieldOrderInfo['relationInfo'],
+                            $fieldOrderInfo['orderKey'],
+                            $order
+                        );
                     } else {
-                        // Ordenar por campo directo
+                        // Ordenar por un campo directo de la tabla
                         $query->orderBy($mainTable . '.' . $key, $order);
                     }
                 }
             }
         } else {
+            // Orden por defecto
             $query->orderBy($mainTable . '.id', 'desc');
         }
 
