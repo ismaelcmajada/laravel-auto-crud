@@ -31,8 +31,15 @@ class ModelScanServiceProvider extends ServiceProvider
 
             if (class_exists($className)) {
                 $reflection = new ReflectionClass($className);
-                if ($reflection->isSubclassOf('Illuminate\Database\Eloquent\Model') && !$reflection->isAbstract()) {
+
+                if (
+                    $reflection->isSubclassOf('Illuminate\\Database\\Eloquent\\Model') &&
+                    !$reflection->isAbstract() &&
+                    isset(class_uses_recursive($className)['Ismaelcmajada\\LaravelAutoCrud\\Models\\Traits\\AutoCrud'])
+                ) {
+
                     $modelName = Str::lower(Str::afterLast($className, '\\'));
+
                     $models[$modelName] = $className::getModel();
                 }
             }
