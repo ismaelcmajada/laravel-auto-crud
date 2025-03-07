@@ -60,10 +60,10 @@ trait AutoCrud
         return $totalIncludes;
     }
 
-    public static function getEndpoint()
+    public static function getEndpoint($model = null)
     {
         $modelName = lcfirst(
-            str_replace('App\\Models\\', '', static::class)
+            str_replace('App\\Models\\', '', $model ?? static::class)
         );
 
         return "/laravel-auto-crud/{$modelName}";
@@ -98,12 +98,12 @@ trait AutoCrud
 
         foreach (static::$externalRelations as &$relation) {
 
-            $relation['endPoint'] = $relation['model']::getEndpoint();
+            $relation['endPoint'] = static::getEndpoint($relation['model']);
 
             if (isset($relation['pivotFields'])) {
                 foreach ($relation['pivotFields'] as &$pivotField) {
                     if (isset($pivotField['relation'])) {
-                        $pivotField['relation']['endPoint'] = $pivotField['relation']['model']::getEndpoint();
+                        $pivotField['relation']['endPoint'] = static::getEndpoint($pivotField['relation']['model']);
                     }
                 }
             }
@@ -136,7 +136,7 @@ trait AutoCrud
             }
 
             if (isset($field['relation']) && (!isset($field['relation']['polymorphic']) || !$field['relation']['polymorphic'])) {
-                $formFields[$key]['relation']['endPoint'] = $field['relation']['model']::getEndpoint();
+                $formFields[$key]['relation']['endPoint'] =  static::getEndpoint($field['relation']['model']);
             }
         }
 
