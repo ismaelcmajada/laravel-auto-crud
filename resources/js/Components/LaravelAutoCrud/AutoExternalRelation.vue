@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { router } from "@inertiajs/vue3"
 import AutocompleteServer from "./AutocompleteServer.vue"
 import axios from "axios"
@@ -20,6 +20,7 @@ const props = defineProps([
   "customFilters",
   "filteredItems",
   "customItemProps",
+  "formData",
 ])
 
 const emit = defineEmits(["bound", "unbound"])
@@ -187,7 +188,7 @@ if (props.externalRelation.pivotFields) {
           v-model="selectedItem"
           :items="
             props.filteredItems?.[props.externalRelation.relation]
-              ? props.filteredItems[props.externalRelation.relation](items)
+              ? props.filteredItems[props.externalRelation.relation](items, props.formData)
               : items
           "
           :custom-filter="
@@ -230,7 +231,7 @@ if (props.externalRelation.pivotFields) {
           v-model="selectedItem"
           :items="
             props.filteredItems?.[props.externalRelation.relation]
-              ? props.filteredItems[props.externalRelation.relation](items)
+              ? props.filteredItems[props.externalRelation.relation](items, props.formData)
               : items
           "
           :item-title="generateItemTitle(props.externalRelation.formKey)"

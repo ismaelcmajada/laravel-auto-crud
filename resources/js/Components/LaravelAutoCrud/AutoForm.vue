@@ -485,7 +485,8 @@ watch(isFormDirty, (value) => {
                   ? mapComboboxItems(
                       field,
                       props.filteredItems[field.field](
-                        comboboxItems[field.field]
+                        comboboxItems[field.field],
+                        props.formData
                       )
                     )
                   : mapComboboxItems(field, comboboxItems[field.field])
@@ -506,7 +507,8 @@ watch(isFormDirty, (value) => {
               :items="
                 props.filteredItems?.[field.relation.relation]
                   ? props.filteredItems[field.relation.relation](
-                      relations[field.field]
+                      relations[field.field],
+                      props.formData
                     )
                   : relations[field.field]
               "
@@ -595,7 +597,8 @@ watch(isFormDirty, (value) => {
               :items="
                 props.filteredItems?.[field.relation.relation]
                   ? props.filteredItems[field.relation.relation](
-                      relations[field.field]
+                      relations[field.field],
+                      props.formData
                     )
                   : relations[field.field]
               "
@@ -656,6 +659,7 @@ watch(isFormDirty, (value) => {
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"
       :withTitle="false"
+      :formData="formData"
     >
       <template v-slot:[`${relation.relation}.actions`]="{ item }">
         <slot

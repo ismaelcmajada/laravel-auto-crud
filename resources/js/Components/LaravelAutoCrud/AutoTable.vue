@@ -296,6 +296,13 @@ watch(item, (value) => {
           </v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
           <slot
+            name="table.actions.prepend"
+            :openDialog="openDialog"
+            :resetTable="resetTable"
+            :tableData="tableData"
+            :loadItems="loadItems"
+          ></slot>
+          <slot
             name="table.actions"
             :openDialog="openDialog"
             :resetTable="resetTable"
@@ -333,6 +340,13 @@ watch(item, (value) => {
               }}</v-tooltip>
             </v-btn>
           </slot>
+          <slot
+            name="table.actions.append"
+            :openDialog="openDialog"
+            :resetTable="resetTable"
+            :tableData="tableData"
+            :loadItems="loadItems"
+          ></slot>
         </v-toolbar>
       </template>
 
