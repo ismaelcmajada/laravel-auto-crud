@@ -5,7 +5,9 @@ namespace Ismaelcmajada\LaravelAutoCrud\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Request;
 
-
+/**
+ * Controlador para la carga de eventos en el calendario
+ */
 class CalendarController extends Controller
 {
     private function getModel($model)
@@ -51,9 +53,17 @@ class CalendarController extends Controller
 
             if (isset($eventFields['separateEvents']) && $eventFields['separateEvents']) {
                 // Generar dos eventos separados
+                $startDateTime = new \DateTime($item->{$eventFields['start']});
+                $startDateTimePlus30 = clone $startDateTime;
+                $startDateTimePlus30->modify('+30 minutes');
+                
+                $endDateTime = new \DateTime($item->{$eventFields['end']});
+                $endDateTimePlus30 = clone $endDateTime;
+                $endDateTimePlus30->modify('+30 minutes');
+                
                 $startEvent = [
                     'start' => $item->{$eventFields['start']},
-                    'end' => $item->{$eventFields['start']},
+                    'end' => $startDateTimePlus30->format('Y-m-d H:i:s'),
                     'title' => $title,
                     'item' => $item,
                     'class' => $eventFields['startClass'] ?? 'cell',
@@ -61,7 +71,7 @@ class CalendarController extends Controller
                 ];
                 $endEvent = [
                     'start' => $item->{$eventFields['end']},
-                    'end' => $item->{$eventFields['end']},
+                    'end' => $endDateTimePlus30->format('Y-m-d H:i:s'),
                     'title' => $title,
                     'item' => $item,
                     'class' => $eventFields['endClass'] ?? 'cell',
