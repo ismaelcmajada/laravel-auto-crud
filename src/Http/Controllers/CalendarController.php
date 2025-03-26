@@ -63,7 +63,7 @@ class CalendarController extends Controller
                 
                 $startEvent = [
                     'start' => $item->{$eventFields['start']},
-                    'end' => $startDateTimePlus30->format('Y-m-d H:i:s'),
+                    'end' => $startDateTimePlus30->format('d-m-Y H:i'),
                     'title' => $title,
                     'item' => $item,
                     'class' => $eventFields['startClass'] ?? 'cell',
@@ -71,7 +71,7 @@ class CalendarController extends Controller
                 ];
                 $endEvent = [
                     'start' => $item->{$eventFields['end']},
-                    'end' => $endDateTimePlus30->format('Y-m-d H:i:s'),
+                    'end' => $endDateTimePlus30->format('d-m-Y H:i'),
                     'title' => $title,
                     'item' => $item,
                     'class' => $eventFields['endClass'] ?? 'cell',
