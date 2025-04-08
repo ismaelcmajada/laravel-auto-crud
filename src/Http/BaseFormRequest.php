@@ -142,11 +142,17 @@ abstract class BaseFormRequest extends FormRequest
         // Añadir reglas personalizadas definidas en el modelo mediante getCustomRules
         if (isset($field['rules']['custom']) && is_array($field['rules']['custom'])) {
             $customRules = $modelInstance::getCustomRules();
+            $request = $this;
 
             // Iterar sobre cada regla personalizada definida en el array 'custom'
             foreach ($field['rules']['custom'] as $customRule) {
                 if (isset($customRules[$customRule])) {
-                    $fieldRules[] = $customRules[$customRule];
+                    // Modificamos para enviar el request completo a la función de validación
+                    $originalRule = $customRules[$customRule];
+                    $fieldRules[] = function ($attribute, $value, $fail) use ($originalRule, $request) {
+                        // Llamamos a la regla original, pero le pasamos la instancia del request
+                        $originalRule($attribute, $value, $fail, $request);
+                    };
                 }
             }
         }
