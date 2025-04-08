@@ -45,25 +45,92 @@ const model = computed(() => {
 const finalHeaders = computed(() => {
   const originalHeaders = [...model.value.tableHeaders]
 
-  // Buscar el índice de la columna con key 'actions'
-  const actionsIndex = originalHeaders.findIndex((h) => h.key === "actions")
-
   // Asegurar que customHeaders es array
   const extraHeaders = Array.isArray(props.customHeaders)
     ? props.customHeaders
     : []
 
-  if (actionsIndex === -1) {
-    // Si no se encuentra 'actions', simplemente concatena al final
-    return [...originalHeaders, ...extraHeaders]
-  } else {
-    // Insertar justo antes de la columna 'actions'
-    return [
-      ...originalHeaders.slice(0, actionsIndex),
-      ...extraHeaders,
-      ...originalHeaders.slice(actionsIndex),
-    ]
+  // If no custom headers, return original headers
+  if (extraHeaders.length === 0) {
+    return originalHeaders
   }
+
+  // Sort custom headers into groups: those with specific positions and those without
+  const headersWithPosition = extraHeaders.filter(h => h.position || h.before || h.after)
+  const headersWithoutPosition = extraHeaders.filter(h => !h.position && !h.before && !h.after)
+
+  // Start with the original headers
+  let result = [...originalHeaders]
+
+  // Process headers with specific position settings
+  headersWithPosition.forEach(header => {
+    // Create a copy of the header without position metadata for actual insertion
+    const cleanHeader = { ...header }
+    delete cleanHeader.position
+    delete cleanHeader.before
+    delete cleanHeader.after
+
+    if (header.before) {
+      // Insert before specified column
+      const targetIndex = result.findIndex(h => h.key === header.before)
+      if (targetIndex !== -1) {
+        result = [
+          ...result.slice(0, targetIndex),
+          cleanHeader,
+          ...result.slice(targetIndex)
+        ]
+      } else {
+        // If target not found, append to end
+        result.push(cleanHeader)
+      }
+    } 
+    else if (header.after) {
+      // Insert after specified column
+      const targetIndex = result.findIndex(h => h.key === header.after)
+      if (targetIndex !== -1) {
+        result = [
+          ...result.slice(0, targetIndex + 1),
+          cleanHeader,
+          ...result.slice(targetIndex + 1)
+        ]
+      } else {
+        // If target not found, append to end
+        result.push(cleanHeader)
+      }
+    }
+    else if (header.position === 'start') {
+      // Insert at beginning
+      result = [cleanHeader, ...result]
+    }
+    else if (header.position === 'end') {
+      // Insert at end
+      result.push(cleanHeader)
+    }
+    else {
+      // Default: append to end
+      result.push(cleanHeader)
+    }
+  })
+
+  // Handle headers without specific positions - insert before actions by default
+  if (headersWithoutPosition.length > 0) {
+    // Insert before actions column
+    const actionsIndex = result.findIndex((h) => h.key === "actions")
+
+    if (actionsIndex === -1) {
+      // If no actions column, add at the end
+      result = [...result, ...headersWithoutPosition]
+    } else {
+      // Insert before actions column
+      result = [
+        ...result.slice(0, actionsIndex),
+        ...headersWithoutPosition,
+        ...result.slice(actionsIndex),
+      ]
+    }
+  }
+
+  return result
 })
 
 const forbiddenActions =
@@ -316,8 +383,10 @@ watch(item, (value) => {
               </v-btn>
 
               <v-btn
+                v-if="
+                  forbiddenActions.indexOf('store') === -1
+                "
                 icon
-                v-if="forbiddenActions.indexOf('store') === -1"
                 @click="openDialog('create')"
               >
                 <v-icon>mdi-file-plus-outline</v-icon>
@@ -350,7 +419,7 @@ watch(item, (value) => {
         </v-toolbar>
       </template>
 
-      <template v-if="!mobile" v-slot:thead>
+      <template v-slot:thead>
         <tr>
           <td
             v-for="header in finalHeaders.filter(
