@@ -4,6 +4,7 @@ namespace Ismaelcmajada\LaravelAutoCrud\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator;
 
 abstract class BaseFormRequest extends FormRequest
 {
@@ -107,13 +108,46 @@ abstract class BaseFormRequest extends FormRequest
                 $fieldRules[] = 'digits_between:8,15';
                 break;
             case 'image':
-                $fieldRules[] = 'image';
-                if (isset($field['rules']['max'])) {
-                    $fieldRules[] = 'max:' . $field['rules']['max'];
-                }
-                if (isset($field['rules']['mimes'])) {
-                    $fieldRules[] = 'mimes:' . $field['rules']['mimes'];
-                }
+                // Solo aplica las reglas de imagen si se envía un archivo
+                $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
+                    // Si no se envió nada o es null, no validamos como imagen
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+                    
+                    // Si es un archivo, validamos con las reglas de imagen
+                    if (is_file($value) || is_object($value)) {
+                        $validator = Validator::make([$attribute => $value], [
+                            $attribute => ['image']
+                        ]);
+                        
+                        if ($validator->fails()) {
+                            $fail($validator->errors()->first($attribute));
+                        }
+                        
+                        // Validar max si está definido
+                        if (isset($field['rules']['max'])) {
+                            $validator = Validator::make([$attribute => $value], [
+                                $attribute => ['max:'.$field['rules']['max']]
+                            ]);
+                            
+                            if ($validator->fails()) {
+                                $fail($validator->errors()->first($attribute));
+                            }
+                        }
+                        
+                        // Validar mimes si está definido
+                        if (isset($field['rules']['mimes'])) {
+                            $validator = Validator::make([$attribute => $value], [
+                                $attribute => ['mimes:'.$field['rules']['mimes']]
+                            ]);
+                            
+                            if ($validator->fails()) {
+                                $fail($validator->errors()->first($attribute));
+                            }
+                        }
+                    }
+                };
                 break;
             case 'file':
                 $fieldRules[] = 'file';
