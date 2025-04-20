@@ -258,6 +258,7 @@ trait AutoCrud
                 'sortable' => true,
                 'key' => $field['field'],
                 'align' => 'center',
+                'type' => $field['type'],
             ];
         }, static::getTableFields());
 
