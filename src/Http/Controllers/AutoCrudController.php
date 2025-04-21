@@ -90,7 +90,7 @@ class AutoCrudController extends Controller
         foreach ($instance::getFormFields() as $field) {
             if ($field['type'] === 'image' || $field['type'] === 'file') {
                 if ($request->input($field['field'] . '_edited')) {
-                    Storage::delete($field['public'] ? 'public/' : 'private/' . $field['type'] . '/' . $model . '/' . $field['field'] . '/' . $id);
+                    Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
                     $validatedData[$field['field']] = null;
                 }
                 if ($request->hasFile($field['field'])) {
