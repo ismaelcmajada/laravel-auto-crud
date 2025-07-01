@@ -72,7 +72,7 @@ const getItems = async () => {
   const response = await axios.get(`${props.externalRelation.endPoint}/all`)
   items.value = response.data
   // Filtra los items que ya están vinculados en la relación
-  if (props.noFilterItems) {
+  if (!props.noFilterItems) {
     items.value = items.value.filter((relatedItem) => {
       return !item.value[props.externalRelation.relation].some(
         (relatedItemFromItem) => relatedItem.id === relatedItemFromItem.id
