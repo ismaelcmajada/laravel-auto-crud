@@ -21,6 +21,7 @@ const props = defineProps([
   "filteredItems",
   "customItemProps",
   "formData",
+  "noFilterItems",
 ])
 
 const emit = defineEmits(["bound", "unbound"])
@@ -71,11 +72,13 @@ const getItems = async () => {
   const response = await axios.get(`${props.externalRelation.endPoint}/all`)
   items.value = response.data
   // Filtra los items que ya están vinculados en la relación
-  items.value = items.value.filter((relatedItem) => {
-    return !item.value[props.externalRelation.relation].some(
-      (relatedItemFromItem) => relatedItem.id === relatedItemFromItem.id
-    )
-  })
+  if (props.noFilterItems) {
+    items.value = items.value.filter((relatedItem) => {
+      return !item.value[props.externalRelation.relation].some(
+        (relatedItemFromItem) => relatedItem.id === relatedItemFromItem.id
+      )
+    })
+  }
 }
 
 const addItem = () => {
@@ -188,7 +191,10 @@ if (props.externalRelation.pivotFields) {
           v-model="selectedItem"
           :items="
             props.filteredItems?.[props.externalRelation.relation]
-              ? props.filteredItems[props.externalRelation.relation](items, props.formData)
+              ? props.filteredItems[props.externalRelation.relation](
+                  items,
+                  props.formData
+                )
               : items
           "
           :custom-filter="
@@ -231,7 +237,10 @@ if (props.externalRelation.pivotFields) {
           v-model="selectedItem"
           :items="
             props.filteredItems?.[props.externalRelation.relation]
-              ? props.filteredItems[props.externalRelation.relation](items, props.formData)
+              ? props.filteredItems[props.externalRelation.relation](
+                  items,
+                  props.formData
+                )
               : items
           "
           :item-title="generateItemTitle(props.externalRelation.formKey)"
