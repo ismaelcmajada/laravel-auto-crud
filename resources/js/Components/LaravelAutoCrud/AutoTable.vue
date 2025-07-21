@@ -30,6 +30,7 @@ const props = defineProps([
   "itemsPerPage",
   "itemsPerPageOptions",
   "customHeaders",
+  "hideReset",
 ])
 
 const emit = defineEmits([
@@ -399,7 +400,7 @@ watch(item, (value) => {
             :tableData="tableData"
             :loadItems="loadItems"
           >
-            <template v-if="!tableData.deleted">
+            <template v-if="!tableData.deleted && !hideReset">
               <v-btn icon @click="resetTable(props.search, props.orderBy)">
                 <v-icon>mdi-refresh</v-icon>
                 <v-tooltip activator="parent">Recargar tabla</v-tooltip>
