@@ -282,7 +282,7 @@ watch(item, (value) => {
               :key="field.field"
               #[`field.${field.field}`]="fieldSlotProps"
             >
-              <!-- 
+              <!--
                 Reexponemos un slot llamado:
                 "auto-form-dialog.auto-form.field.nombreCampo"
 
@@ -405,7 +405,8 @@ watch(item, (value) => {
                 <v-icon>mdi-refresh</v-icon>
                 <v-tooltip activator="parent">Recargar tabla</v-tooltip>
               </v-btn>
-
+            </template>
+            <template v-if="!tableData.deleted">
               <v-btn
                 v-if="forbiddenActions.indexOf('store') === -1"
                 icon
