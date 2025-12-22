@@ -218,6 +218,49 @@ class AutoCrudController extends Controller
         return Redirect::back()->with(['success' => 'Elemento desvinculado', 'data' => $instance]);
     }
 
+    public function createChild(DynamicFormRequest $request, $model, $id, $externalRelation)
+    {
+        $instance = $this->getModel($model)::findOrFail($id);
+        $validatedData = $request->validated();
+
+        $child = $instance->{$externalRelation}()->create($validatedData);
+
+        $instance->load($instance::getIncludes());
+
+        $this->setRecord($model, $instance->id, 'update');
+
+        return Redirect::back()->with(['success' => 'Elemento hijo creado', 'data' => $instance, 'child' => $child]);
+    }
+
+    public function updateChild(DynamicFormRequest $request, $model, $id, $externalRelation, $childId)
+    {
+        $instance = $this->getModel($model)::findOrFail($id);
+        $validatedData = $request->validated();
+
+        $child = $instance->{$externalRelation}()->findOrFail($childId);
+        $child->update($validatedData);
+
+        $instance->load($instance::getIncludes());
+
+        $this->setRecord($model, $instance->id, 'update');
+
+        return Redirect::back()->with(['success' => 'Elemento hijo actualizado', 'data' => $instance, 'child' => $child]);
+    }
+
+    public function destroyChild($model, $id, $externalRelation, $childId)
+    {
+        $instance = $this->getModel($model)::findOrFail($id);
+
+        $child = $instance->{$externalRelation}()->findOrFail($childId);
+        $child->delete();
+
+        $instance->load($instance::getIncludes());
+
+        $this->setRecord($model, $instance->id, 'update');
+
+        return Redirect::back()->with(['success' => 'Elemento hijo eliminado', 'data' => $instance]);
+    }
+
     public function setRecord($model, $element_id, $action)
     {
         $record = new Record();

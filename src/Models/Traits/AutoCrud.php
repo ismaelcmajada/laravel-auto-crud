@@ -197,6 +197,31 @@ trait AutoCrud
             throw new \Exception("Modelo relacionado {$relatedModelClass} no existe");
         }
 
+        $relationType = $relation['type'] ?? 'belongsToMany';
+
+        if ($relationType === 'hasMany') {
+            return $this->handleHasManyRelation($relation, $relatedModelClass);
+        }
+
+        return $this->handleBelongsToManyRelation($relation, $relatedModelClass);
+    }
+
+    protected function handleHasManyRelation($relation, $relatedModelClass)
+    {
+        $foreignKey = $relation['foreignKey'];
+        $localKey = $relation['localKey'] ?? 'id';
+
+        $relationMethod = $this->hasMany($relatedModelClass, $foreignKey, $localKey);
+
+        if ($this->usesSoftDeletes($relatedModelClass)) {
+            $relationMethod = $relationMethod->withTrashed();
+        }
+
+        return $relationMethod;
+    }
+
+    protected function handleBelongsToManyRelation($relation, $relatedModelClass)
+    {
         $relatedPivotModelClass = $relation['pivotModel'] ?? null;
         if (class_exists($relatedPivotModelClass)) {
             $relationMethod = $this->belongsToMany($relatedModelClass, $relation['pivotTable'], $relation['foreignKey'], $relation['relatedKey'])->using($relatedPivotModelClass);
