@@ -225,7 +225,7 @@ const handleChildSuccess = () => {
 
 const deleteChild = (childItem) => {
   router.post(
-    `${childItem.endPoint}/${childItem.id}/destroy`,
+    `${childModel.value.endPoint}/${childItem.id}/destroy`,
     {},
     {
       onSuccess: () => {

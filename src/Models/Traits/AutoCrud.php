@@ -211,13 +211,7 @@ trait AutoCrud
         $foreignKey = $relation['foreignKey'];
         $localKey = $relation['localKey'] ?? 'id';
 
-        $relationMethod = $this->hasMany($relatedModelClass, $foreignKey, $localKey);
-
-        if ($this->usesSoftDeletes($relatedModelClass)) {
-            $relationMethod = $relationMethod->withTrashed();
-        }
-
-        return $relationMethod;
+        return $this->hasMany($relatedModelClass, $foreignKey, $localKey);
     }
 
     protected function handleBelongsToManyRelation($relation, $relatedModelClass)
