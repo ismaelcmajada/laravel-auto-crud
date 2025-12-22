@@ -15,6 +15,9 @@ const props = defineProps([
   "filteredItems",
   "customItemProps",
   "modelName",
+  "storeEndpoint",
+  "updateEndpoint",
+  "hideExternalRelations",
 ])
 
 const emit = defineEmits([
@@ -23,6 +26,7 @@ const emit = defineEmits([
   "update:item",
   "formChange",
   "isDirty",
+  "success",
 ])
 
 const model = computed(() => {
@@ -88,10 +92,10 @@ const cancelClose = () => {
 </script>
 
 <template>
-  <v-dialog 
-    scrollable 
-    v-model="show" 
-    width="1024" 
+  <v-dialog
+    scrollable
+    v-model="show"
+    width="1024"
     :persistent="isFormDirty"
     @click:outside="handleClose"
   >
@@ -138,8 +142,12 @@ const cancelClose = () => {
               :customFilters="props.customFilters"
               :filteredItems="props.filteredItems"
               :customItemProps="props.customItemProps"
+              :storeEndpoint="props.storeEndpoint"
+              :updateEndpoint="props.updateEndpoint"
+              :hideExternalRelations="props.hideExternalRelations"
               @formChange="emit('formChange', $event)"
               @isDirty="handleIsFormDirty($event)"
+              @success="emit('success', $event)"
             >
               <template #prepend="slotProps">
                 <slot name="auto-form.prepend" v-bind="slotProps"> </slot>
@@ -205,11 +213,10 @@ const cancelClose = () => {
   <!-- Confirmation dialog for unsaved changes -->
   <v-dialog v-model="showConfirmDialog" max-width="400">
     <v-card>
-      <v-card-title class="text-h6">
-        Cambios sin guardar
-      </v-card-title>
+      <v-card-title class="text-h6"> Cambios sin guardar </v-card-title>
       <v-card-text>
-        Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar el formulario? Los cambios se perderán.
+        Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar el
+        formulario? Los cambios se perderán.
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>

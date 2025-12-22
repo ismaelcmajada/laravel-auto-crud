@@ -40,9 +40,9 @@ const selectedItem = ref(null)
 const pivotData = ref({})
 
 // hasMany specific
-const childData = ref({})
-const childEditData = ref({})
-const childEditing = ref(null)
+const showChildDialog = ref(false)
+const childDialogType = ref("create")
+const childDialogItem = ref(null)
 
 // Manejo de formularios de añadir/editar
 const addForm = ref(false)
@@ -165,49 +165,36 @@ const removeItem = (relationId) => {
 // ------------------------------------------------------------
 const isHasMany = computed(() => props.externalRelation.type === "hasMany")
 
-const createChild = () => {
-  router.post(
-    `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}`,
-    childData.value,
-    {
-      onSuccess: (page) => {
-        item.value = page.props.flash.data
-        childData.value = {}
-        emit("childCreated")
-      },
-    }
-  )
+const childStoreEndpoint = computed(() => {
+  return `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}`
+})
+
+const childUpdateEndpoint = computed(() => {
+  if (!childDialogItem.value) return null
+  return `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}/${childDialogItem.value.id}`
+})
+
+const openCreateChildDialog = () => {
+  childDialogType.value = "create"
+  childDialogItem.value = null
+  showChildDialog.value = true
 }
 
-const updateChildItem = (childId) => {
-  router.post(
-    `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}/${childId}`,
-    childEditData.value,
-    {
-      onSuccess: (page) => {
-        item.value = page.props.flash.data
-        childEditData.value = {}
-        childEditing.value = null
-        emit("childUpdated")
-      },
-      onError: () => {
-        childEditData.value = {}
-        childEditing.value = null
-      },
-    }
-  )
+const openEditChildDialog = (childItem) => {
+  childDialogType.value = "edit"
+  childDialogItem.value = childItem
+  showChildDialog.value = true
 }
 
-const editChild = (childItem) => {
-  childEditData.value = {}
-  props.externalRelation.fields?.forEach((field) => {
-    if (field.type === "boolean") {
-      childEditData.value[field.field] = Boolean(Number(childItem[field.field]))
-    } else {
-      childEditData.value[field.field] = childItem[field.field]
-    }
-  })
-  childEditing.value = childItem.id
+const handleChildSuccess = (flash) => {
+  item.value = flash.data
+  showChildDialog.value = false
+  childDialogItem.value = null
+  if (childDialogType.value === "create") {
+    emit("childCreated")
+  } else {
+    emit("childUpdated")
+  }
 }
 
 const deleteChild = (childId) => {
@@ -223,18 +210,6 @@ const deleteChild = (childId) => {
   )
 }
 
-const getChildRelations = () => {
-  const relationsFromFields = props.externalRelation.fields?.filter(
-    (field) => field.relation
-  )
-
-  relationsFromFields?.forEach((field) => {
-    axios.get(`${field.relation.endPoint}/all`).then((response) => {
-      relations.value[field.field] = response.data
-    })
-  })
-}
-
 // ------------------------------------------------------------
 // INICIALIZACIÓN
 // ------------------------------------------------------------
@@ -243,9 +218,6 @@ if (!isHasMany.value) {
 }
 if (props.externalRelation.pivotFields) {
   getRelations()
-}
-if (isHasMany.value && props.externalRelation.fields) {
-  getChildRelations()
 }
 </script>
 
@@ -811,331 +783,80 @@ if (isHasMany.value && props.externalRelation.fields) {
   <!-- HASMANY (1:n) -->
   <!-- ============================================== -->
 
-  <!-- FORM para crear un nuevo elemento hijo -->
-  <v-form v-if="isHasMany" v-model="addForm" @submit.prevent="createChild">
-    <v-row
-      class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-5"
-    >
-      <!-- CAMPOS DEL HIJO -->
-      <v-col
-        cols="12"
-        :md="props.externalRelation.fields?.length > 1 ? 6 : 12"
-        v-for="field in props.externalRelation.fields ?? []"
-        :key="field.field"
-      >
-        <v-text-field
-          v-if="
-            !field.relation &&
-            field.type !== 'boolean' &&
-            field.type !== 'date' &&
-            field.type !== 'password' &&
-            field.type !== 'select' &&
-            field.type !== 'text'
-          "
-          density="compact"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-        />
-        <v-checkbox
-          v-else-if="field.type === 'boolean'"
-          density="compact"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-        />
-        <v-text-field
-          v-else-if="field.type === 'date'"
-          type="date"
-          density="compact"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-        />
-        <v-text-field
-          v-else-if="field.type === 'password'"
-          density="compact"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-          type="password"
-        />
-        <v-select
-          v-else-if="field.type === 'select'"
-          density="compact"
-          :items="field.options"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-          :clearable="!field.rules?.required"
-        />
-        <v-textarea
-          v-else-if="field.type === 'text'"
-          density="compact"
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-        />
-        <!-- Campo RELACIÓN en el hijo -->
-        <v-autocomplete
-          v-else-if="field.relation"
-          :items="
-            props.filteredItems?.[field.relation.relation]
-              ? props.filteredItems[field.relation.relation](
-                  relations[field.field]
-                )
-              : relations[field.field]
-          "
-          :label="field.rules?.required ? field.name + ' *' : field.name"
-          :item-props="props.customItemProps?.[field.relation.relation]"
-          :item-title="generateItemTitle(field.relation.formKey)"
-          :custom-filter="
-            (item, queryText, itemText) =>
-              searchByWords(
-                item,
-                queryText,
-                itemText,
-                props.customFilters?.[field.relation.relation]
-              )
-          "
-          item-value="id"
-          v-model="childData[field.field]"
-          :rules="getFieldRules(childData[field.field], field)"
-          density="compact"
-        >
-          <template v-if="field.relation.storeShortcut" v-slot:prepend>
-            <v-btn
-              icon="mdi-plus-circle"
-              density="compact"
-              @click="storePivotShortcutShows[field.field] = true"
-            />
-            <auto-form-dialog
-              v-model:show="storePivotShortcutShows[field.field]"
-              type="create"
-              :filteredItems="props.filteredItems"
-              :customFilters="props.customFilters"
-              :customItemProps="props.customItemProps"
-              :modelName="field.relation.model"
-              @update:show="getChildRelations"
-            />
-          </template>
-        </v-autocomplete>
-      </v-col>
-
-      <!-- Botón "Agregar" -->
-      <v-col cols="12" class="text-center pt-0">
+  <template v-if="isHasMany">
+    <!-- Botón para añadir nuevo hijo -->
+    <v-row class="align-center justify-center my-3 mx-1">
+      <v-col cols="12" class="d-flex align-center">
+        <span class="text-subtitle-1 mr-2">{{
+          props.externalRelation.name
+        }}</span>
         <v-btn
-          @click="createChild()"
-          :disabled="!addForm"
-          color="blue-darken-1"
+          icon="mdi-plus-circle"
+          color="primary"
           variant="text"
+          @click="openCreateChildDialog"
         >
-          Agregar
-        </v-btn>
-      </v-col>
-    </v-row>
-  </v-form>
-
-  <!-- LISTADO DE ELEMENTOS HIJOS (hasMany) -->
-  <v-row
-    v-if="isHasMany && item && item[props.externalRelation.relation]"
-    v-for="childItem in item[props.externalRelation.relation]"
-    :key="childItem.id"
-    class="pa-0 ma-0"
-  >
-    <!-- VISTA NORMAL (sin editar) -->
-    <v-row
-      v-if="childItem.id !== childEditing"
-      class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
-    >
-      <!-- Mostramos los campos del hijo -->
-      <v-col
-        class="d-flex align-center justify-center"
-        v-for="field in props.externalRelation.fields ?? []"
-        :key="field.field"
-      >
-        <v-chip>
-          {{ field.name }}:
-          <template v-if="field.relation && relations[field.field]">
-            {{
-              tableItemTitle(
-                field.relation.formKey,
-                relations[field.field]?.find(
-                  (r) => r.id === childItem[field.field]
-                )
-              )
-            }}
-          </template>
-          <v-checkbox
-            density="compact"
-            class="mt-5"
-            v-else-if="field.type === 'boolean'"
-            :model-value="Boolean(Number(childItem[field.field]))"
-            disabled
-          />
-          <span v-else>{{ childItem[field.field] }}</span>
-        </v-chip>
-      </v-col>
-      <v-col class="text-end">
-        <slot
-          :name="`${props.externalRelation.relation}.actions`"
-          :item="childItem"
-        />
-        <v-btn
-          icon
-          density="compact"
-          variant="text"
-          @click="editChild(childItem)"
-        >
-          <v-icon>mdi-pencil</v-icon>
-          <v-tooltip right>Editar</v-tooltip>
-        </v-btn>
-        <v-btn
-          icon
-          density="compact"
-          variant="text"
-          @click="deleteChild(childItem.id)"
-        >
-          <v-icon>mdi-delete</v-icon>
-          <v-tooltip right>Eliminar</v-tooltip>
+          <v-icon>mdi-plus-circle</v-icon>
+          <v-tooltip activator="parent"
+            >Añadir {{ props.externalRelation.name }}</v-tooltip
+          >
         </v-btn>
       </v-col>
     </v-row>
 
-    <!-- FORM DE EDICIÓN DEL HIJO -->
-    <v-form
-      v-else
-      v-model="updateForm"
-      @submit.prevent="updateChildItem(childItem.id)"
-      class="w-100"
+    <!-- Diálogo para crear/editar hijo usando AutoFormDialog -->
+    <auto-form-dialog
+      v-model:show="showChildDialog"
+      :type="childDialogType"
+      :item="childDialogItem"
+      :modelName="props.externalRelation.model"
+      :storeEndpoint="childStoreEndpoint"
+      :updateEndpoint="childUpdateEndpoint"
+      :hideExternalRelations="true"
+      :filteredItems="props.filteredItems"
+      :customFilters="props.customFilters"
+      :customItemProps="props.customItemProps"
+      @success="handleChildSuccess"
+    />
+
+    <!-- LISTADO DE ELEMENTOS HIJOS (hasMany) -->
+    <v-row
+      v-if="item && item[props.externalRelation.relation]"
+      v-for="childItem in item[props.externalRelation.relation]"
+      :key="childItem.id"
+      class="pa-0 ma-0"
     >
       <v-row
-        class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-5"
+        class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
       >
-        <v-col
-          cols="12"
-          :md="props.externalRelation.fields?.length > 1 ? 6 : 12"
-          v-for="field in props.externalRelation.fields ?? []"
-          :key="field.field"
-        >
-          <v-text-field
-            v-if="
-              !field.relation &&
-              field.type !== 'boolean' &&
-              field.type !== 'date' &&
-              field.type !== 'password' &&
-              field.type !== 'select' &&
-              field.type !== 'text'
-            "
-            density="compact"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-          />
-          <v-checkbox
-            v-else-if="field.type === 'boolean'"
-            density="compact"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-          />
-          <v-text-field
-            v-else-if="field.type === 'date'"
-            density="compact"
-            type="date"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-          />
-          <v-text-field
-            v-else-if="field.type === 'password'"
-            density="compact"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-            type="password"
-          />
-          <v-select
-            v-else-if="field.type === 'select'"
-            density="compact"
-            :items="field.options"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-            :clearable="!field.rules?.required"
-          />
-          <v-textarea
-            v-else-if="field.type === 'text'"
-            density="compact"
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-          />
-          <!-- Relación en modo edición hijo -->
-          <v-autocomplete
-            v-else-if="field.relation"
-            :items="
-              props.filteredItems?.[field.relation.relation]
-                ? props.filteredItems[field.relation.relation](
-                    relations[field.field]
-                  )
-                : relations[field.field]
-            "
-            :label="field.rules?.required ? field.name + ' *' : field.name"
-            :item-props="props.customItemProps?.[field.relation.relation]"
-            :item-title="generateItemTitle(field.relation.formKey)"
-            :custom-filter="
-              (item, queryText, itemText) =>
-                searchByWords(
-                  item,
-                  queryText,
-                  itemText,
-                  props.customFilters?.[field.relation.relation]
-                )
-            "
-            item-value="id"
-            v-model="childEditData[field.field]"
-            :rules="getFieldRules(childEditData[field.field], field)"
-            density="compact"
-          >
-            <template v-if="field.relation.storeShortcut" v-slot:prepend>
-              <v-btn
-                icon="mdi-plus-circle"
-                density="compact"
-                @click="storePivotShortcutShows[field.field] = true"
-              />
-              <auto-form-dialog
-                v-model:show="storePivotShortcutShows[field.field]"
-                type="create"
-                :filteredItems="props.filteredItems"
-                :customFilters="props.customFilters"
-                :customItemProps="props.customItemProps"
-                :modelName="field.relation.model"
-                @update:show="getChildRelations"
-              />
-            </template>
-          </v-autocomplete>
+        <v-col class="my-3">
+          {{ generateItemTitle(props.externalRelation.formKey)(childItem) }}
         </v-col>
-
-        <!-- Botones GUARDAR / CANCELAR -->
-        <v-col cols="12" class="text-center">
+        <v-col class="text-end">
+          <slot
+            :name="`${props.externalRelation.relation}.actions`"
+            :item="childItem"
+          />
           <v-btn
-            @click="updateChildItem(childItem.id)"
-            color="blue-darken-1"
+            icon
+            density="compact"
             variant="text"
-            :disabled="!updateForm"
+            @click="openEditChildDialog(childItem)"
           >
-            Guardar
+            <v-icon>mdi-pencil</v-icon>
+            <v-tooltip activator="parent">Editar</v-tooltip>
           </v-btn>
           <v-btn
-            @click="childEditing = null"
-            color="red-darken-1"
+            icon
+            density="compact"
             variant="text"
+            @click="deleteChild(childItem.id)"
           >
-            Cancelar
+            <v-icon>mdi-delete</v-icon>
+            <v-tooltip activator="parent">Eliminar</v-tooltip>
           </v-btn>
         </v-col>
       </v-row>
-    </v-form>
-  </v-row>
+    </v-row>
+  </template>
 </template>

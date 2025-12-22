@@ -20,6 +20,9 @@ const props = defineProps([
   "customFilters",
   "filteredItems",
   "customItemProps",
+  "storeEndpoint",
+  "updateEndpoint",
+  "hideExternalRelations",
 ])
 
 const emit = defineEmits([
@@ -27,6 +30,7 @@ const emit = defineEmits([
   "update:type",
   "formChange",
   "isDirty",
+  "success",
 ])
 
 const model = computed(() => {
@@ -157,18 +161,23 @@ const initFields = () => {
 
 const submit = () => {
   if (type.value === "edit") {
-    formData.post(`${model.value.endPoint}/${item.value.id}`, {
+    const updateUrl =
+      props.updateEndpoint || `${model.value.endPoint}/${item.value.id}`
+    formData.post(updateUrl, {
       _method: "put",
       forceFormData: true,
       onSuccess: (page) => {
         item.value = page.props.flash.data
+        emit("success", page.props.flash)
       },
     })
   } else if (type.value === "create") {
-    formData.post(model.value.endPoint, {
+    const storeUrl = props.storeEndpoint || model.value.endPoint
+    formData.post(storeUrl, {
       onSuccess: (page) => {
         item.value = page.props.flash.data
-        if (model.value.externalRelations.length > 0) {
+        emit("success", page.props.flash)
+        if (!props.storeEndpoint && model.value.externalRelations.length > 0) {
           type.value = "edit"
         }
       },
@@ -641,7 +650,11 @@ watch(isFormDirty, (value) => {
     </div>
   </v-form>
   <div
-    v-if="type === 'edit' && model.externalRelations.length > 0"
+    v-if="
+      !props.hideExternalRelations &&
+      type === 'edit' &&
+      model.externalRelations.length > 0
+    "
     v-for="relation in model.externalRelations"
   >
     <v-divider
