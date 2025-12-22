@@ -23,6 +23,7 @@ const props = defineProps([
   "storeEndpoint",
   "updateEndpoint",
   "hideExternalRelations",
+  "defaultValues",
 ])
 
 const emit = defineEmits([
@@ -138,7 +139,9 @@ const initFields = () => {
     })
   } else if (type.value === "create") {
     filteredFormFields.value.forEach((field) => {
-      formData[field.field] = field.default ?? null
+      // Prioridad: defaultValues > field.default > null
+      formData[field.field] =
+        props.defaultValues?.[field.field] ?? field.default ?? null
 
       if (item.value?.[field.field] && field.type === "date") {
         formData[field.field] = formatDate(item.value[field.field])

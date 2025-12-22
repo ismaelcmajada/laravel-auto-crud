@@ -18,6 +18,7 @@ const props = defineProps([
   "storeEndpoint",
   "updateEndpoint",
   "hideExternalRelations",
+  "defaultValues",
 ])
 
 const emit = defineEmits([
@@ -145,6 +146,7 @@ const cancelClose = () => {
               :storeEndpoint="props.storeEndpoint"
               :updateEndpoint="props.updateEndpoint"
               :hideExternalRelations="props.hideExternalRelations"
+              :defaultValues="props.defaultValues"
               @formChange="emit('formChange', $event)"
               @isDirty="handleIsFormDirty($event)"
               @success="emit('success', $event)"

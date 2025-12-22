@@ -39,9 +39,5 @@ Route::middleware('web')->group(function () {
         Route::post('/{model}/{id}/pivot/{externalRelation}/{item}', [AutoCrudController::class, 'updatePivot'])->name('laravel-auto-crud.model.updatePivot');
         Route::post('/{model}/{id}/bind/{externalRelation}/{item}', [AutoCrudController::class, 'bind'])->name('laravel-auto-crud.model.bind');
         Route::post('/{model}/{id}/unbind/{externalRelation}/{item}', [AutoCrudController::class, 'unbind'])->name('laravel-auto-crud.model.unbind');
-
-        Route::post('/{model}/{id}/child/{externalRelation}', [AutoCrudController::class, 'createChild'])->name('laravel-auto-crud.model.createChild');
-        Route::post('/{model}/{id}/child/{externalRelation}/{childId}', [AutoCrudController::class, 'updateChild'])->name('laravel-auto-crud.model.updateChild');
-        Route::post('/{model}/{id}/child/{externalRelation}/{childId}/destroy', [AutoCrudController::class, 'destroyChild'])->name('laravel-auto-crud.model.destroyChild');
     });
 });

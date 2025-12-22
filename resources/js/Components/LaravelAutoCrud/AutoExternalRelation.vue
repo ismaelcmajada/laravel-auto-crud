@@ -165,13 +165,12 @@ const removeItem = (relationId) => {
 // ------------------------------------------------------------
 const isHasMany = computed(() => props.externalRelation.type === "hasMany")
 
-const childStoreEndpoint = computed(() => {
-  return `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}`
-})
-
-const childUpdateEndpoint = computed(() => {
-  if (!childDialogItem.value) return null
-  return `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}/${childDialogItem.value.id}`
+// defaultValues para crear hijo con la FK del padre ya establecida
+const childDefaultValues = computed(() => {
+  if (!props.externalRelation.foreignKey || !item.value) return {}
+  return {
+    [props.externalRelation.foreignKey]: item.value.id,
+  }
 })
 
 const openCreateChildDialog = () => {
@@ -186,10 +185,16 @@ const openEditChildDialog = (childItem) => {
   showChildDialog.value = true
 }
 
-const handleChildSuccess = (flash) => {
-  item.value = flash.data
+const reloadParent = () => {
+  axios.get(`${props.endPoint}/${item.value.id}`).then((response) => {
+    item.value = response.data
+  })
+}
+
+const handleChildSuccess = () => {
   showChildDialog.value = false
   childDialogItem.value = null
+  reloadParent()
   if (childDialogType.value === "create") {
     emit("childCreated")
   } else {
@@ -197,13 +202,13 @@ const handleChildSuccess = (flash) => {
   }
 }
 
-const deleteChild = (childId) => {
+const deleteChild = (childItem) => {
   router.post(
-    `${props.endPoint}/${item.value.id}/child/${props.externalRelation.relation}/${childId}/destroy`,
+    `${childItem.endPoint}/${childItem.id}/destroy`,
     {},
     {
-      onSuccess: (page) => {
-        item.value = page.props.flash.data
+      onSuccess: () => {
+        reloadParent()
         emit("childDeleted")
       },
     }
@@ -810,8 +815,7 @@ if (props.externalRelation.pivotFields) {
       :type="childDialogType"
       :item="childDialogItem"
       :modelName="props.externalRelation.model"
-      :storeEndpoint="childStoreEndpoint"
-      :updateEndpoint="childUpdateEndpoint"
+      :defaultValues="childDefaultValues"
       :hideExternalRelations="true"
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
@@ -850,7 +854,7 @@ if (props.externalRelation.pivotFields) {
             icon
             density="compact"
             variant="text"
-            @click="deleteChild(childItem.id)"
+            @click="deleteChild(childItem)"
           >
             <v-icon>mdi-delete</v-icon>
             <v-tooltip activator="parent">Eliminar</v-tooltip>
