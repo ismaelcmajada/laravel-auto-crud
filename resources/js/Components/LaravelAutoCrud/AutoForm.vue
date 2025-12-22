@@ -20,10 +20,6 @@ const props = defineProps([
   "customFilters",
   "filteredItems",
   "customItemProps",
-  "storeEndpoint",
-  "updateEndpoint",
-  "hideExternalRelations",
-  "defaultValues",
 ])
 
 const emit = defineEmits([
@@ -139,9 +135,7 @@ const initFields = () => {
     })
   } else if (type.value === "create") {
     filteredFormFields.value.forEach((field) => {
-      // Prioridad: defaultValues > field.default > null
-      formData[field.field] =
-        props.defaultValues?.[field.field] ?? field.default ?? null
+      formData[field.field] = field.default ?? null
 
       if (item.value?.[field.field] && field.type === "date") {
         formData[field.field] = formatDate(item.value[field.field])
@@ -164,9 +158,7 @@ const initFields = () => {
 
 const submit = () => {
   if (type.value === "edit") {
-    const updateUrl =
-      props.updateEndpoint || `${model.value.endPoint}/${item.value.id}`
-    formData.post(updateUrl, {
+    formData.post(`${model.value.endPoint}/${item.value.id}`, {
       _method: "put",
       forceFormData: true,
       onSuccess: (page) => {
@@ -175,12 +167,11 @@ const submit = () => {
       },
     })
   } else if (type.value === "create") {
-    const storeUrl = props.storeEndpoint || model.value.endPoint
-    formData.post(storeUrl, {
+    formData.post(model.value.endPoint, {
       onSuccess: (page) => {
         item.value = page.props.flash.data
         emit("success", page.props.flash)
-        if (!props.storeEndpoint && model.value.externalRelations.length > 0) {
+        if (model.value.externalRelations.length > 0) {
           type.value = "edit"
         }
       },
@@ -653,11 +644,7 @@ watch(isFormDirty, (value) => {
     </div>
   </v-form>
   <div
-    v-if="
-      !props.hideExternalRelations &&
-      type === 'edit' &&
-      model.externalRelations.length > 0
-    "
+    v-if="type === 'edit' && model.externalRelations.length > 0"
     v-for="relation in model.externalRelations"
   >
     <v-divider

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from "vue"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import AutocompleteServer from "./AutocompleteServer.vue"
 import axios from "axios"
 import { ruleRequired, getFieldRules } from "../../Utils/LaravelAutoCrud/rules"
@@ -9,8 +9,9 @@ import {
   generateItemTitle,
   searchByWords,
 } from "../../Utils/LaravelAutoCrud/autocompleteUtils"
-
 import { generateItemTitle as tableItemTitle } from "../../Utils/LaravelAutoCrud/datatableUtils"
+
+const page = usePage()
 
 const props = defineProps([
   "item",
@@ -165,11 +166,31 @@ const removeItem = (relationId) => {
 // ------------------------------------------------------------
 const isHasMany = computed(() => props.externalRelation.type === "hasMany")
 
-// defaultValues para crear hijo con la FK del padre ya establecida
-const childDefaultValues = computed(() => {
-  if (!props.externalRelation.foreignKey || !item.value) return {}
+// Modelo hijo modificado con FK hidden y default
+const childModel = computed(() => {
+  if (!isHasMany.value || !props.externalRelation.model) return null
+
+  const parts = props.externalRelation.model.split("\\")
+  const modelName = parts[parts.length - 1].toLowerCase()
+  const baseModel = page.props.models?.[modelName]
+
+  if (!baseModel) return null
+
+  // Clonar el modelo y modificar el campo FK
+  const modifiedFormFields = baseModel.formFields.map((field) => {
+    if (field.field === props.externalRelation.foreignKey) {
+      return {
+        ...field,
+        hidden: true,
+        default: item.value?.id,
+      }
+    }
+    return field
+  })
+
   return {
-    [props.externalRelation.foreignKey]: item.value.id,
+    ...baseModel,
+    formFields: modifiedFormFields,
   }
 })
 
@@ -814,9 +835,7 @@ if (props.externalRelation.pivotFields) {
       v-model:show="showChildDialog"
       :type="childDialogType"
       :item="childDialogItem"
-      :modelName="props.externalRelation.model"
-      :defaultValues="childDefaultValues"
-      :hideExternalRelations="true"
+      :model="childModel"
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"
