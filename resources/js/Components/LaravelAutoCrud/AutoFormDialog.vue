@@ -2,7 +2,6 @@
 import AutoForm from "./AutoForm.vue"
 import { computed, ref } from "vue"
 import { usePage } from "@inertiajs/vue3"
-import AutoExternalRelation from "./AutoExternalRelation.vue"
 
 const page = usePage()
 
