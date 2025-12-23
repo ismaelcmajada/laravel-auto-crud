@@ -50,6 +50,10 @@ class AutoCrudController extends Controller
             if ($field['type'] === 'select' && isset($field['multiple']) && $field['multiple']) {
                 $validatedData[$field['field']] = implode(', ', $validatedData[$field['field']]);
             }
+            // Excluir campos de archivos múltiples del create (se manejan después)
+            if (($field['type'] === 'image' || $field['type'] === 'file') && isset($field['multiple']) && $field['multiple']) {
+                unset($validatedData[$field['field']]);
+            }
         }
 
         $instance = $modelInstance::create($validatedData);
