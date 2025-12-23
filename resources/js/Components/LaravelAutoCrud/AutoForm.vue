@@ -64,6 +64,7 @@ const storeExternalShortcutShows = ref({})
 const imagePreview = ref({})
 const filePreview = ref({})
 const filesToDelete = ref({})
+const fileInputKey = ref(0)
 
 const getRelations = () => {
   const relationsFromFormFields = filteredFormFields.value.filter(
@@ -100,8 +101,9 @@ const formData = useForm(
 )
 
 const initFields = () => {
-  // Resetear archivos a eliminar
+  // Resetear archivos a eliminar y forzar reseteo del input
   filesToDelete.value = {}
+  fileInputKey.value++
 
   if (type.value === "edit" && item.value) {
     filteredFormFields.value.forEach((field) => {
@@ -491,6 +493,7 @@ watch(isFormDirty, (value) => {
               <!-- Input para múltiples archivos (sin v-model para evitar bug) -->
               <v-file-input
                 v-if="field.multiple"
+                :key="`file-${field.field}-${fileInputKey}`"
                 :label="field.rules?.required ? field.name + ' *' : field.name"
                 :rules="getFieldRules(formData[field.field], field)"
                 @change="(file) => handleFileUpload(file, field.field, true)"
