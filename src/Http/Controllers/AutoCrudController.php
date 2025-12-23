@@ -109,42 +109,51 @@ class AutoCrudController extends Controller
 
         foreach ($instance::getFormFields() as $field) {
             if ($field['type'] === 'image' || $field['type'] === 'file') {
-                if ($request->input($field['field'] . '_edited')) {
-                    // Eliminar archivos anteriores
-                    if (isset($field['multiple']) && $field['multiple']) {
-                        // Múltiples archivos - eliminar todos los archivos existentes
-                        $existingFiles = json_decode($instance->{$field['field']}, true) ?? [];
-                        foreach ($existingFiles as $existingFile) {
-                            Storage::delete($existingFile);
+                // Múltiples archivos - guardado aditivo
+                if (isset($field['multiple']) && $field['multiple']) {
+                    $existingFiles = json_decode($instance->{$field['field']}, true) ?? [];
+                    
+                    // Eliminar archivos marcados para borrar
+                    $filesToDelete = $request->input($field['field'] . '_delete', []);
+                    if (!empty($filesToDelete)) {
+                        foreach ($filesToDelete as $fileToDelete) {
+                            Storage::delete($fileToDelete);
+                            $existingFiles = array_filter($existingFiles, fn($f) => $f !== $fileToDelete);
                         }
-                    } else {
-                        Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
+                        $existingFiles = array_values($existingFiles); // Reindexar
                     }
-                    $validatedData[$field['field']] = null;
-                }
-                if ($request->hasFile($field['field'])) {
-                    $storagePath = $field['public'] ? 'public/' : 'private/';
-                    $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
-                    $storagePath .= $model;
-
-                    // Múltiples archivos
-                    if (isset($field['multiple']) && $field['multiple'] && is_array($request->file($field['field']))) {
-                        $filePaths = [];
-                        foreach ($request->file($field['field']) as $index => $file) {
-                            $fileName = $field['field'] . '/' . $id . '_' . $index . '_' . $file->getClientOriginalName();
+                    
+                    // Añadir nuevos archivos
+                    if ($request->hasFile($field['field'])) {
+                        $storagePath = $field['public'] ? 'public/' : 'private/';
+                        $storagePath .= 'files/' . $model;
+                        
+                        foreach ($request->file($field['field']) as $file) {
+                            $fileName = $field['field'] . '/' . $id . '_' . time() . '_' . $file->getClientOriginalName();
                             $filePath = $file->storeAs($storagePath, $fileName);
 
-                            if (!$field['public'] && $field['type'] === 'file') {
+                            if (!$field['public']) {
                                 $fileContent = Storage::get($filePath);
                                 $encryptedContent = Crypt::encryptString($fileContent);
                                 Storage::put($filePath, $encryptedContent);
                             }
 
-                            $filePaths[] = $filePath;
+                            $existingFiles[] = $filePath;
                         }
-                        $validatedData[$field['field']] = json_encode($filePaths);
-                    } else {
-                        // Archivo único
+                    }
+                    
+                    $validatedData[$field['field']] = !empty($existingFiles) ? json_encode($existingFiles) : null;
+                    
+                } else {
+                    // Archivo único (comportamiento original)
+                    if ($request->input($field['field'] . '_edited')) {
+                        Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
+                        $validatedData[$field['field']] = null;
+                    }
+                    if ($request->hasFile($field['field'])) {
+                        $storagePath = $field['public'] ? 'public/' : 'private/';
+                        $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
+                        $storagePath .= $model;
                         $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id);
 
                         if (!$field['public'] && $field['type'] === 'file') {

@@ -63,6 +63,7 @@ const storeExternalShortcutShows = ref({})
 
 const imagePreview = ref({})
 const filePreview = ref({})
+const filesToDelete = ref({})
 
 const getRelations = () => {
   const relationsFromFormFields = filteredFormFields.value.filter(
@@ -99,6 +100,9 @@ const formData = useForm(
 )
 
 const initFields = () => {
+  // Resetear archivos a eliminar
+  filesToDelete.value = {}
+
   if (type.value === "edit" && item.value) {
     filteredFormFields.value.forEach((field) => {
       if (field.type === "password") {
@@ -245,7 +249,20 @@ const removeFile = (fileFieldName, index = null) => {
   formData[fileFieldName + "_edited"] = true
 
   if (index !== null && Array.isArray(filePreview.value[fileFieldName])) {
-    // Eliminar un archivo específico de múltiples
+    // Eliminar un archivo específico de múltiples - guardar para eliminar en backend
+    const fileToDelete = filePreview.value[fileFieldName][index]
+    if (!filesToDelete.value[fileFieldName]) {
+      filesToDelete.value[fileFieldName] = []
+    }
+    filesToDelete.value[fileFieldName].push(fileToDelete)
+
+    // Actualizar formData con los archivos a eliminar
+    formData.transform((data) => ({
+      ...data,
+      [fileFieldName + "_delete"]: filesToDelete.value[fileFieldName],
+    }))
+    formData[fileFieldName + "_delete"] = filesToDelete.value[fileFieldName]
+
     filePreview.value[fileFieldName].splice(index, 1)
     if (filePreview.value[fileFieldName].length === 0) {
       filePreview.value[fileFieldName] = null
@@ -258,7 +275,8 @@ const removeFile = (fileFieldName, index = null) => {
 
 const downloadFile = (fileFieldName, filePath = null) => {
   const link = document.createElement("a")
-  link.href = filePath || filePreview.value[fileFieldName]
+  const path = filePath || filePreview.value[fileFieldName]
+  link.href = `/laravel-auto-crud/${path}`
   link.download = filePath ? filePath.split("/").pop() : fileFieldName
   link.click()
 }
@@ -431,17 +449,24 @@ watch(isFormDirty, (value) => {
                 prepend-icon="mdi-file"
               ></v-file-input>
 
-              <!-- Input para múltiples archivos -->
+              <!-- Input para múltiples archivos (sin v-model para evitar bug) -->
               <v-file-input
                 v-if="field.multiple"
                 :label="field.rules?.required ? field.name + ' *' : field.name"
-                v-model="formData[field.field]"
                 :rules="getFieldRules(formData[field.field], field)"
                 @change="(file) => handleFileUpload(file, field.field, true)"
                 :accept="field.rules?.accept"
                 prepend-icon="mdi-file"
                 multiple
                 :chips="true"
+                :hint="
+                  filePreview[field.field]?.length
+                    ? `${
+                        filePreview[field.field].length
+                      } archivo(s) guardado(s)`
+                    : ''
+                "
+                persistent-hint
               ></v-file-input>
 
               <!-- Preview archivo único -->
