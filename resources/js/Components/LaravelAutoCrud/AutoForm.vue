@@ -101,8 +101,9 @@ const formData = useForm(
 )
 
 const initFields = () => {
-  // Resetear archivos a eliminar y forzar reseteo del input
+  // Resetear archivos a eliminar, previews y forzar reseteo del input
   filesToDelete.value = {}
+  filePreview.value = {}
   fileInputKey.value++
 
   if (type.value === "edit" && item.value) {
@@ -249,23 +250,32 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
 }
 
 const clearFileInput = (fileFieldName) => {
-  if (!filesToDelete.value[fileFieldName]?.length) {
-    // No hay archivos marcados para eliminar, resetear el campo a su valor por defecto
-    formData.defaults(fileFieldName, null)
-    formData.reset(fileFieldName)
-    // Limpiar también el transform
-    formData.transform((data) => {
-      const newData = { ...data }
-      delete newData[fileFieldName + "_edited"]
-      return newData
-    })
-  } else {
-    // Hay archivos marcados para eliminar, solo limpiar el campo pero mantener dirty
-    formData[fileFieldName] = null
+  // Verificar si hay archivos marcados para eliminar
+  const hasFilesToDelete =
+    filesToDelete.value[fileFieldName] &&
+    filesToDelete.value[fileFieldName].length > 0
+
+  // Limpiar solo los archivos nuevos del input
+  formData[fileFieldName] = null
+
+  if (hasFilesToDelete) {
+    // Hay archivos marcados para eliminar, mantener dirty
     formData.transform((data) => ({
       ...data,
       [fileFieldName]: null,
+      [fileFieldName + "_delete"]: filesToDelete.value[fileFieldName],
+      [fileFieldName + "_edited"]: true,
     }))
+  } else {
+    // No hay archivos marcados para eliminar, resetear el campo
+    formData.defaults(fileFieldName, null)
+    formData.reset(fileFieldName)
+    formData.transform((data) => {
+      const newData = { ...data }
+      delete newData[fileFieldName + "_edited"]
+      delete newData[fileFieldName + "_delete"]
+      return newData
+    })
   }
 }
 
