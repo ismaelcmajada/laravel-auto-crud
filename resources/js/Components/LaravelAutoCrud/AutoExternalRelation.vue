@@ -25,13 +25,7 @@ const props = defineProps([
   "noFilterItems",
 ])
 
-const emit = defineEmits([
-  "bound",
-  "unbound",
-  "childCreated",
-  "childUpdated",
-  "childDeleted",
-])
+const emit = defineEmits(["bound", "unbound"])
 
 // ------------------------------------------------------------
 // REFS & STATES
@@ -216,11 +210,6 @@ const handleChildSuccess = () => {
   showChildDialog.value = false
   childDialogItem.value = null
   reloadParent()
-  if (childDialogType.value === "create") {
-    emit("childCreated")
-  } else {
-    emit("childUpdated")
-  }
 }
 
 const deleteChild = (childItem) => {
@@ -230,7 +219,6 @@ const deleteChild = (childItem) => {
     {
       onSuccess: () => {
         reloadParent()
-        emit("childDeleted")
       },
     }
   )
