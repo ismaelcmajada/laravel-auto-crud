@@ -5,6 +5,7 @@ import AutocompleteServer from "./AutocompleteServer.vue"
 import axios from "axios"
 import { ruleRequired, getFieldRules } from "../../Utils/LaravelAutoCrud/rules"
 import AutoTable from "./AutoTable.vue"
+import { router } from "@inertiajs/vue3"
 import {
   generateItemTitle,
   searchByWords,
