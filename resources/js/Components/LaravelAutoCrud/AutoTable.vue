@@ -1,7 +1,6 @@
 <script setup>
 import AutoFormDialog from "./AutoFormDialog.vue"
 import AutoForm from "./AutoForm.vue"
-import AutoExternalRelation from "./AutoExternalRelation.vue"
 import DestroyDialog from "./DestroyDialog.vue"
 import RestoreDialog from "./RestoreDialog.vue"
 import DestroyPermanentDialog from "./DestroyPermanentDialog.vue"
