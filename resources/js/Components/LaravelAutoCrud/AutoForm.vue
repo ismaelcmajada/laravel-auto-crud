@@ -269,23 +269,24 @@ const removeFile = (fileFieldName, index = null) => {
       filePreview.value[fileFieldName] = null
     }
 
-    // Actualizar formData para activar dirty y enviar archivos a eliminar
+    // Forzar dirty asignando al campo principal y transform
+    formData[fileFieldName] = "__DELETE_MARKER__"
     formData[fileFieldName + "_delete"] = [
       ...filesToDelete.value[fileFieldName],
     ]
-    formData[fileFieldName + "_edited"] = true
     formData.transform((data) => ({
       ...data,
+      [fileFieldName]: null,
       [fileFieldName + "_delete"]: filesToDelete.value[fileFieldName],
       [fileFieldName + "_edited"]: true,
     }))
   } else {
     // Archivo único
     filePreview.value[fileFieldName] = null
-    formData[fileFieldName] = null
-    formData[fileFieldName + "_edited"] = true
+    formData[fileFieldName] = "__DELETE_MARKER__"
     formData.transform((data) => ({
       ...data,
+      [fileFieldName]: null,
       [fileFieldName + "_edited"]: true,
     }))
   }
