@@ -12,6 +12,7 @@ export default function useTableServer() {
     sortBy: [],
     items: [],
     search: {},
+    exactFilters: {},
     itemsLength: 0,
     deleted: false,
   })
@@ -28,7 +29,9 @@ export default function useTableServer() {
   )
   const selectedHeaders = ref([])
   const itemHeaders = ref([])
-  const allHeaders = computed(() => selectedHeaders.value.length == itemHeaders.value.length)
+  const allHeaders = computed(
+    () => selectedHeaders.value.length == itemHeaders.value.length
+  )
 
   const toggleAllHeaders = () => {
     if (allHeaders.value) selectedHeaders.value = []
@@ -51,6 +54,7 @@ export default function useTableServer() {
 
     const searchJson = JSON.stringify(cleanedSearch)
     const sortByJson = JSON.stringify(tableData.sortBy)
+    const exactFiltersJson = JSON.stringify(tableData.exactFilters)
 
     axios
       .post(`${endPoint.value}/load-items`, {
@@ -58,6 +62,7 @@ export default function useTableServer() {
         itemsPerPage: tableData.itemsPerPage,
         sortBy: sortByJson,
         search: searchJson,
+        exactFilters: exactFiltersJson,
         deleted: tableData.deleted,
       })
       .then((response) => {
@@ -72,6 +77,7 @@ export default function useTableServer() {
     tableData.itemsPerPage = 10
     tableData.sortBy = []
     tableData.search = {}
+    tableData.exactFilters = {}
     tableData.itemsLength = 0
     tableData.deleted = false
     tableData.items = []

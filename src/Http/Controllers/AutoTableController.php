@@ -25,6 +25,7 @@ class AutoTableController extends Controller
         $itemsPerPage = Request::get('itemsPerPage', 10);
         $sortBy = json_decode(Request::get('sortBy', '[]'), true);
         $search = json_decode(Request::get('search', '[]'), true);
+        $exactFilters = json_decode(Request::get('exactFilters', '[]'), true);
         $deleted = filter_var(Request::get('deleted', 'false'), FILTER_VALIDATE_BOOLEAN);
 
         $modelInstance = $this->getModel($model);
@@ -37,6 +38,15 @@ class AutoTableController extends Controller
 
         if ($deleted && in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($modelInstance))) {
             $query->onlyTrashed();
+        }
+
+        // Filtros exactos (para hasMany, relaciones, etc.)
+        if (!empty($exactFilters)) {
+            foreach ($exactFilters as $key => $value) {
+                if ($value !== null && $value !== '') {
+                    $query->where($mainTable . '.' . $key, '=', $value);
+                }
+            }
         }
 
         // Búsquedas

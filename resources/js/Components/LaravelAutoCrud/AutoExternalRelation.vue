@@ -189,8 +189,8 @@ const childModel = computed(() => {
   }
 })
 
-// Search filter para cargar solo los hijos del padre actual
-const childSearch = computed(() => {
+// Filtro exacto para cargar solo los hijos del padre actual
+const childExactFilters = computed(() => {
   if (!isHasMany.value || !item.value?.id) return {}
   return {
     [props.externalRelation.foreignKey]: item.value.id,
@@ -774,7 +774,7 @@ if (props.externalRelation.pivotFields) {
     <auto-table
       :title="props.externalRelation.name"
       :model="childModel"
-      :search="childSearch"
+      :exactFilters="childExactFilters"
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"

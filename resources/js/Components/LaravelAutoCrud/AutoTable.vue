@@ -25,6 +25,7 @@ const props = defineProps([
   "customFilters",
   "filteredItems",
   "search",
+  "exactFilters",
   "orderBy",
   "customItemProps",
   "itemsPerPage",
@@ -149,13 +150,14 @@ const {
 } = useTableServer()
 
 tableData.search = props.search ?? {}
-
+tableData.exactFilters = props.exactFilters ?? {}
 tableData.orderBy = props.orderBy ?? []
 
 watch(
   props,
   () => {
     tableData.search = props.search ?? {}
+    tableData.exactFilters = props.exactFilters ?? {}
     tableData.orderBy = props.orderBy ?? []
     loadItems()
   },
