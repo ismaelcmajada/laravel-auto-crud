@@ -77,7 +77,7 @@ export default function useTableServer() {
     tableData.itemsPerPage = 10
     tableData.sortBy = []
     tableData.search = {}
-    tableData.exactFilters = {}
+    // exactFilters no se resetea - son filtros fijos (ej: FK en hasMany)
     tableData.itemsLength = 0
     tableData.deleted = false
     tableData.items = []

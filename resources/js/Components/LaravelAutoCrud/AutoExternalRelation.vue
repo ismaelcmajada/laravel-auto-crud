@@ -161,7 +161,7 @@ const removeItem = (relationId) => {
 // ------------------------------------------------------------
 const isHasMany = computed(() => props.externalRelation.type === "hasMany")
 
-// Modelo hijo modificado con FK hidden y default
+// Modelo hijo modificado con FK hidden/default y columna FK oculta en tabla
 const childModel = computed(() => {
   if (!isHasMany.value || !props.externalRelation.model) return null
 
@@ -171,9 +171,11 @@ const childModel = computed(() => {
 
   if (!baseModel) return null
 
-  // Clonar el modelo y modificar el campo FK
+  const foreignKey = props.externalRelation.foreignKey
+
+  // Clonar el modelo y modificar el campo FK en formFields
   const modifiedFormFields = baseModel.formFields.map((field) => {
-    if (field.field === props.externalRelation.foreignKey) {
+    if (field.field === foreignKey) {
       return {
         ...field,
         hidden: true,
@@ -183,9 +185,15 @@ const childModel = computed(() => {
     return field
   })
 
+  // Filtrar la columna FK de tableHeaders
+  const modifiedTableHeaders = baseModel.tableHeaders.filter(
+    (header) => header.key !== foreignKey
+  )
+
   return {
     ...baseModel,
     formFields: modifiedFormFields,
+    tableHeaders: modifiedTableHeaders,
   }
 })
 
