@@ -178,6 +178,8 @@ const submit = () => {
       forceFormData: true,
       onSuccess: (page) => {
         item.value = page.props.flash.data
+        filesToDelete.value = {}
+        initFields()
         emit("success", page.props.flash)
       },
     })
@@ -185,6 +187,8 @@ const submit = () => {
     formData.post(model.value.endPoint, {
       onSuccess: (page) => {
         item.value = page.props.flash.data
+        filesToDelete.value = {}
+        initFields()
         emit("success", page.props.flash)
         if (model.value.externalRelations.length > 0) {
           type.value = "edit"
@@ -218,10 +222,15 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
       // Múltiples archivos
       const files = Array.from(file.target.files)
       formData[fileFieldName] = files
+      // Incluir también archivos a eliminar si los hay
+      const deleteFiles = filesToDelete.value[fileFieldName] || []
       formData.transform((data) => ({
         ...data,
         [fileFieldName]: files,
         [fileFieldName + "_edited"]: true,
+        ...(deleteFiles.length > 0 && {
+          [fileFieldName + "_delete"]: deleteFiles,
+        }),
       }))
     } else {
       // Un solo archivo
