@@ -150,12 +150,41 @@ abstract class BaseFormRequest extends FormRequest
                 };
                 break;
             case 'file':
-                $fieldRules[] = 'file';
-                if (isset($field['rules']['max'])) {
-                    $fieldRules[] = 'max:' . $field['rules']['max'];
-                }
-                if (isset($field['rules']['mimes'])) {
-                    $fieldRules[] = 'mimes:' . $field['rules']['mimes'];
+                if (isset($field['multiple']) && $field['multiple']) {
+                    // Múltiples archivos
+                    $fieldRules[] = 'array';
+                    $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
+                        if (!is_array($value)) {
+                            return;
+                        }
+                        foreach ($value as $index => $file) {
+                            if (!is_file($file) && !is_object($file)) {
+                                continue;
+                            }
+                            $rules = ['file'];
+                            if (isset($field['rules']['max'])) {
+                                $rules[] = 'max:' . $field['rules']['max'];
+                            }
+                            if (isset($field['rules']['mimes'])) {
+                                $rules[] = 'mimes:' . $field['rules']['mimes'];
+                            }
+                            $validator = Validator::make([$attribute => $file], [
+                                $attribute => $rules
+                            ]);
+                            if ($validator->fails()) {
+                                $fail("Archivo {$index}: " . $validator->errors()->first($attribute));
+                            }
+                        }
+                    };
+                } else {
+                    // Archivo único
+                    $fieldRules[] = 'file';
+                    if (isset($field['rules']['max'])) {
+                        $fieldRules[] = 'max:' . $field['rules']['max'];
+                    }
+                    if (isset($field['rules']['mimes'])) {
+                        $fieldRules[] = 'mimes:' . $field['rules']['mimes'];
+                    }
                 }
                 break;
         }
