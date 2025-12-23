@@ -232,16 +232,27 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
       }))
     }
   } else {
-    // Si se vacía el input, quitar dirty solo si no hay archivos a eliminar
-    formData[fileFieldName] = null
-    if (!filesToDelete.value[fileFieldName]?.length) {
-      formData[fileFieldName + "_edited"] = false
-      formData.transform((data) => {
-        const newData = { ...data }
-        delete newData[fileFieldName + "_edited"]
-        return newData
-      })
-    }
+    // Si se vacía el input, limpiar archivos pendientes
+    clearFileInput(fileFieldName)
+  }
+}
+
+const clearFileInput = (fileFieldName) => {
+  formData[fileFieldName] = null
+  if (!filesToDelete.value[fileFieldName]?.length) {
+    // No hay archivos marcados para eliminar, quitar dirty
+    formData.transform((data) => {
+      const newData = { ...data }
+      delete newData[fileFieldName + "_edited"]
+      newData[fileFieldName] = null
+      return newData
+    })
+  } else {
+    // Hay archivos marcados para eliminar, mantener dirty
+    formData.transform((data) => ({
+      ...data,
+      [fileFieldName]: null,
+    }))
   }
 }
 
@@ -474,6 +485,7 @@ watch(isFormDirty, (value) => {
                 :label="field.rules?.required ? field.name + ' *' : field.name"
                 :rules="getFieldRules(formData[field.field], field)"
                 @change="(file) => handleFileUpload(file, field.field, true)"
+                @click:clear="() => clearFileInput(field.field)"
                 :accept="field.rules?.accept"
                 prepend-icon="mdi-file"
                 multiple
