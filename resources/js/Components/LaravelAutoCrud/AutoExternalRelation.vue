@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed } from "vue"
-import { router, usePage } from "@inertiajs/vue3"
+import { usePage } from "@inertiajs/vue3"
 import AutocompleteServer from "./AutocompleteServer.vue"
 import axios from "axios"
 import { ruleRequired, getFieldRules } from "../../Utils/LaravelAutoCrud/rules"
-import AutoFormDialog from "./AutoFormDialog.vue"
+import AutoTable from "./AutoTable.vue"
 import {
   generateItemTitle,
   searchByWords,
@@ -25,7 +25,13 @@ const props = defineProps([
   "noFilterItems",
 ])
 
-const emit = defineEmits(["bound", "unbound"])
+const emit = defineEmits([
+  "bound",
+  "unbound",
+  "childCreated",
+  "childUpdated",
+  "childDeleted",
+])
 
 // ------------------------------------------------------------
 // REFS & STATES
@@ -33,11 +39,6 @@ const emit = defineEmits(["bound", "unbound"])
 const items = ref([])
 const selectedItem = ref(null)
 const pivotData = ref({})
-
-// hasMany specific
-const showChildDialog = ref(false)
-const childDialogType = ref("create")
-const childDialogItem = ref(null)
 
 // Manejo de formularios de añadir/editar
 const addForm = ref(false)
@@ -188,41 +189,13 @@ const childModel = computed(() => {
   }
 })
 
-const openCreateChildDialog = () => {
-  childDialogType.value = "create"
-  childDialogItem.value = null
-  showChildDialog.value = true
-}
-
-const openEditChildDialog = (childItem) => {
-  childDialogType.value = "edit"
-  childDialogItem.value = childItem
-  showChildDialog.value = true
-}
-
-const reloadParent = () => {
-  axios.get(`${props.endPoint}/${item.value.id}`).then((response) => {
-    item.value = response.data
-  })
-}
-
-const handleChildSuccess = () => {
-  showChildDialog.value = false
-  childDialogItem.value = null
-  reloadParent()
-}
-
-const deleteChild = (childItem) => {
-  router.post(
-    `${childModel.value.endPoint}/${childItem.id}/destroy`,
-    {},
-    {
-      onSuccess: () => {
-        reloadParent()
-      },
-    }
-  )
-}
+// Search filter para cargar solo los hijos del padre actual
+const childSearch = computed(() => {
+  if (!isHasMany.value || !item.value?.id) return {}
+  return {
+    [props.externalRelation.foreignKey]: item.value.id,
+  }
+})
 
 // ------------------------------------------------------------
 // INICIALIZACIÓN
@@ -797,77 +770,14 @@ if (props.externalRelation.pivotFields) {
   <!-- HASMANY (1:n) -->
   <!-- ============================================== -->
 
-  <template v-if="isHasMany">
-    <!-- Botón para añadir nuevo hijo -->
-    <v-row class="align-center justify-center my-3 mx-1">
-      <v-col cols="12" class="d-flex align-center">
-        <span class="text-subtitle-1 mr-2">{{
-          props.externalRelation.name
-        }}</span>
-        <v-btn
-          icon="mdi-plus-circle"
-          color="primary"
-          variant="text"
-          @click="openCreateChildDialog"
-        >
-          <v-icon>mdi-plus-circle</v-icon>
-          <v-tooltip activator="parent"
-            >Añadir {{ props.externalRelation.name }}</v-tooltip
-          >
-        </v-btn>
-      </v-col>
-    </v-row>
-
-    <!-- Diálogo para crear/editar hijo usando AutoFormDialog -->
-    <auto-form-dialog
-      v-model:show="showChildDialog"
-      :type="childDialogType"
-      :item="childDialogItem"
+  <template v-if="isHasMany && childModel">
+    <auto-table
+      :title="props.externalRelation.name"
       :model="childModel"
+      :search="childSearch"
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"
-      @success="handleChildSuccess"
     />
-
-    <!-- LISTADO DE ELEMENTOS HIJOS (hasMany) -->
-    <v-row
-      v-if="item && item[props.externalRelation.relation]"
-      v-for="childItem in item[props.externalRelation.relation]"
-      :key="childItem.id"
-      class="pa-0 ma-0"
-    >
-      <v-row
-        class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
-      >
-        <v-col class="my-3">
-          {{ generateItemTitle(props.externalRelation.formKey)(childItem) }}
-        </v-col>
-        <v-col class="text-end">
-          <slot
-            :name="`${props.externalRelation.relation}.actions`"
-            :item="childItem"
-          />
-          <v-btn
-            icon
-            density="compact"
-            variant="text"
-            @click="openEditChildDialog(childItem)"
-          >
-            <v-icon>mdi-pencil</v-icon>
-            <v-tooltip activator="parent">Editar</v-tooltip>
-          </v-btn>
-          <v-btn
-            icon
-            density="compact"
-            variant="text"
-            @click="deleteChild(childItem)"
-          >
-            <v-icon>mdi-delete</v-icon>
-            <v-tooltip activator="parent">Eliminar</v-tooltip>
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-row>
   </template>
 </template>
