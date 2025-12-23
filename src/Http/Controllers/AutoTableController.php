@@ -67,12 +67,22 @@ class AutoTableController extends Controller
                     $fieldSearchInfo = $this->getFieldSearchInfo($modelInstance, $key);
 
                     if ($fieldSearchInfo !== null) {
-                        $this->applyDynamicSearch(
-                            $query,
-                            $fieldSearchInfo['relationInfo'],
-                            $fieldSearchInfo['searchKey'],
-                            $value
-                        );
+                        // Si es una externalRelation (belongsToMany/hasMany con table:true)
+                        if (isset($fieldSearchInfo['externalRelation'])) {
+                            $this->applyExternalRelationSearch(
+                                $query,
+                                $fieldSearchInfo['externalRelation'],
+                                $fieldSearchInfo['searchKey'],
+                                $value
+                            );
+                        } else {
+                            $this->applyDynamicSearch(
+                                $query,
+                                $fieldSearchInfo['relationInfo'],
+                                $fieldSearchInfo['searchKey'],
+                                $value
+                            );
+                        }
                     }
                     // Si $fieldSearchInfo === null y tampoco hay scope, no se hace nada.
                 }
@@ -274,6 +284,36 @@ class AutoTableController extends Controller
         }
     }
 
+    private function applyExternalRelationSearch($query, $externalRelation, $tableKey, $value)
+    {
+        $relationName = $externalRelation['relation'];
+
+        if ($tableKey === null) {
+            return;
+        }
+
+        // Extraer los campos del tableKey (ej: "{name} - {code}" => ['name', 'code'])
+        preg_match_all('/\{([\w\.]+)\}/', $tableKey, $matches);
+        $fields = $matches[1];
+
+        if (empty($fields)) {
+            return;
+        }
+
+        $query->whereHas($relationName, function ($q) use ($fields, $value) {
+            $q->where(function ($subQuery) use ($fields, $value) {
+                $searchWords = explode(' ', $value);
+                foreach ($searchWords as $word) {
+                    $subQuery->where(function ($wordQuery) use ($fields, $word) {
+                        foreach ($fields as $field) {
+                            $wordQuery->orWhere($field, 'LIKE', '%' . $word . '%');
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     private function applyDynamicOrder($query, $relationInfo, $orderKey, $order)
     {
         if (strpos($orderKey, '{') === false) {
@@ -390,6 +430,17 @@ class AutoTableController extends Controller
                 return [
                     'relationInfo' => $relationInfo,
                     'searchKey' => $searchKey,
+                ];
+            }
+        }
+
+        // Buscar en externalRelations con table:true
+        foreach ($modelInstance::getExternalRelations() as $externalRelation) {
+            if (isset($externalRelation['table']) && $externalRelation['table'] && $externalRelation['relation'] === $key) {
+                return [
+                    'relationInfo' => null,
+                    'searchKey' => $externalRelation['tableKey'] ?? null,
+                    'externalRelation' => $externalRelation,
                 ];
             }
         }

@@ -139,6 +139,19 @@ const finalHeaders = computed(() => {
 const forbiddenActions =
   model.value.forbiddenActions[page.props.auth.user.role] ?? []
 
+// Mapa de externalRelations por su key (relation name) para renderizar en tabla
+const externalRelationsMap = computed(() => {
+  const map = {}
+  if (model.value.externalRelations) {
+    model.value.externalRelations.forEach((rel) => {
+      if (rel.table) {
+        map[rel.relation] = rel
+      }
+    })
+  }
+  return map
+})
+
 const {
   endPoint,
   loading,
@@ -472,7 +485,7 @@ watch(item, (value) => {
       >
         <slot :name="`item.${header.key}`" :item="item">
           <span>
-            <!-- Si header tiene relation y tableKey -->
+            <!-- Si header tiene relation y tableKey (belongsTo) -->
             <template v-if="header.relation && header.relation.tableKey">
               {{
                 generateItemTitle(
@@ -480,6 +493,31 @@ watch(item, (value) => {
                   item[header.relation.relation]
                 )
               }}
+            </template>
+
+            <!-- Si es una externalRelation (belongsToMany/hasMany con table:true) -->
+            <template v-else-if="externalRelationsMap[header.key]">
+              <v-chip
+                v-for="relItem in item[header.key]?.slice(0, 5)"
+                :key="relItem.id"
+                size="small"
+                class="ma-1"
+              >
+                {{
+                  generateItemTitle(
+                    externalRelationsMap[header.key].tableKey,
+                    relItem
+                  )
+                }}
+              </v-chip>
+              <v-chip
+                v-if="item[header.key]?.length > 5"
+                size="small"
+                class="ma-1"
+                color="grey"
+              >
+                +{{ item[header.key].length - 5 }}
+              </v-chip>
             </template>
 
             <!-- Si el header tiene type image -->
