@@ -119,8 +119,19 @@ const initFields = () => {
             item.value[field.field]
           }`
         }
-        if (field.type === "file") {
-          filePreview.value[field.field] = item.value[field.field]
+        if (field.type === "file" && item.value[field.field]) {
+          if (field.multiple) {
+            // Múltiples archivos - parsear JSON
+            try {
+              filePreview.value[field.field] = JSON.parse(
+                item.value[field.field]
+              )
+            } catch (e) {
+              filePreview.value[field.field] = []
+            }
+          } else {
+            filePreview.value[field.field] = item.value[field.field]
+          }
         }
         if (field.type === "select") {
           if (field.multiple) {
@@ -197,17 +208,22 @@ const handleImageUpload = (file, imageFieldName) => {
   }
 }
 
-const handleFileUpload = (file, fileFieldName) => {
+const handleFileUpload = (file, fileFieldName, multiple = false) => {
   formData.transform((data) => ({
     ...data,
     [fileFieldName + "_edited"]: true,
   }))
   if (file) {
-    const reader = new FileReader()
-    reader.readAsDataURL(file.target.files[0])
-    formData[fileFieldName] = file.target.files[0]
+    if (multiple) {
+      // Múltiples archivos
+      const files = Array.from(file.target.files)
+      formData[fileFieldName] = files
+    } else {
+      // Un solo archivo
+      formData[fileFieldName] = file.target.files[0]
+    }
   } else {
-    formData[fileFieldName] = null
+    formData[fileFieldName] = multiple ? [] : null
   }
 }
 
@@ -221,20 +237,29 @@ const removeImage = (imageFieldName) => {
   formData[imageFieldName] = null
 }
 
-const removeFile = (fileFieldName) => {
+const removeFile = (fileFieldName, index = null) => {
   formData.transform((data) => ({
     ...data,
     [fileFieldName + "_edited"]: true,
   }))
   formData[fileFieldName + "_edited"] = true
-  filePreview.value[fileFieldName] = null
-  formData[fileFieldName] = null
+
+  if (index !== null && Array.isArray(filePreview.value[fileFieldName])) {
+    // Eliminar un archivo específico de múltiples
+    filePreview.value[fileFieldName].splice(index, 1)
+    if (filePreview.value[fileFieldName].length === 0) {
+      filePreview.value[fileFieldName] = null
+    }
+  } else {
+    filePreview.value[fileFieldName] = null
+    formData[fileFieldName] = null
+  }
 }
 
-const downloadFile = (fileFieldName) => {
+const downloadFile = (fileFieldName, filePath = null) => {
   const link = document.createElement("a")
-  link.href = filePreview.value[fileFieldName]
-  link.download = fileFieldName
+  link.href = filePath || filePreview.value[fileFieldName]
+  link.download = filePath ? filePath.split("/").pop() : fileFieldName
   link.click()
 }
 
@@ -395,18 +420,33 @@ watch(isFormDirty, (value) => {
             </div>
 
             <div v-if="field.type === 'file'">
+              <!-- Input para archivo único -->
               <v-file-input
-                v-if="!filePreview[field.field]"
+                v-if="!field.multiple && !filePreview[field.field]"
                 :label="field.rules?.required ? field.name + ' *' : field.name"
                 v-model="formData[field.field]"
                 :rules="getFieldRules(formData[field.field], field)"
-                @change="(file) => handleFileUpload(file, field.field)"
+                @change="(file) => handleFileUpload(file, field.field, false)"
                 :accept="field.rules?.accept"
                 prepend-icon="mdi-file"
               ></v-file-input>
 
+              <!-- Input para múltiples archivos -->
+              <v-file-input
+                v-if="field.multiple"
+                :label="field.rules?.required ? field.name + ' *' : field.name"
+                v-model="formData[field.field]"
+                :rules="getFieldRules(formData[field.field], field)"
+                @change="(file) => handleFileUpload(file, field.field, true)"
+                :accept="field.rules?.accept"
+                prepend-icon="mdi-file"
+                multiple
+                :chips="true"
+              ></v-file-input>
+
+              <!-- Preview archivo único -->
               <v-row
-                v-else
+                v-if="!field.multiple && filePreview[field.field]"
                 class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-2"
               >
                 <v-col cols="12" md="10" class="text-center">
@@ -421,19 +461,53 @@ watch(isFormDirty, (value) => {
                     class="mr-2"
                   >
                     <v-icon>mdi-download</v-icon>
-
                     <v-tooltip activator="parent">Descargar</v-tooltip>
                   </v-btn>
-                  <v-btn
-                    icon
-                    @click="removeFile(field.field)"
-                    color="red"
-                    class=""
-                  >
+                  <v-btn icon @click="removeFile(field.field)" color="red">
                     <v-icon>mdi-delete</v-icon>
                   </v-btn>
                 </v-col>
               </v-row>
+
+              <!-- Preview múltiples archivos existentes -->
+              <div
+                v-if="
+                  field.multiple &&
+                  Array.isArray(filePreview[field.field]) &&
+                  filePreview[field.field].length > 0
+                "
+              >
+                <v-row
+                  v-for="(filePath, index) in filePreview[field.field]"
+                  :key="index"
+                  class="align-center justify-center my-2 mx-1 elevation-3 rounded pa-2"
+                >
+                  <v-col cols="12" md="10" class="text-center">
+                    {{ filePath.split("/").pop() }}
+                  </v-col>
+
+                  <v-col cols="12" md="2" class="text-center">
+                    <v-btn
+                      icon
+                      size="small"
+                      @click="downloadFile(field.field, filePath)"
+                      color="blue"
+                      class="mr-1"
+                    >
+                      <v-icon>mdi-download</v-icon>
+                      <v-tooltip activator="parent">Descargar</v-tooltip>
+                    </v-btn>
+                    <v-btn
+                      icon
+                      size="small"
+                      @click="removeFile(field.field, index)"
+                      color="red"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </div>
             </div>
 
             <v-checkbox

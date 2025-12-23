@@ -60,15 +60,35 @@ class AutoCrudController extends Controller
                 $storagePath = $field['public'] ? 'public/' : 'private/';
                 $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
                 $storagePath .= $model;
-                $filePath = $request->file($field['field'])->storeAs($storagePath,  $field['field'] . '/' . $instance['id']);
 
-                if (!$field['public'] && $field['type'] === 'file') {
-                    $fileContent = Storage::get($filePath);
-                    $encryptedContent = Crypt::encryptString($fileContent);
-                    Storage::put($filePath, $encryptedContent);
+                // Múltiples archivos
+                if (isset($field['multiple']) && $field['multiple'] && is_array($request->file($field['field']))) {
+                    $filePaths = [];
+                    foreach ($request->file($field['field']) as $index => $file) {
+                        $fileName = $field['field'] . '/' . $instance['id'] . '_' . $index . '_' . $file->getClientOriginalName();
+                        $filePath = $file->storeAs($storagePath, $fileName);
+
+                        if (!$field['public'] && $field['type'] === 'file') {
+                            $fileContent = Storage::get($filePath);
+                            $encryptedContent = Crypt::encryptString($fileContent);
+                            Storage::put($filePath, $encryptedContent);
+                        }
+
+                        $filePaths[] = $filePath;
+                    }
+                    $instance->{$field['field']} = json_encode($filePaths);
+                } else {
+                    // Archivo único
+                    $filePath = $request->file($field['field'])->storeAs($storagePath,  $field['field'] . '/' . $instance['id']);
+
+                    if (!$field['public'] && $field['type'] === 'file') {
+                        $fileContent = Storage::get($filePath);
+                        $encryptedContent = Crypt::encryptString($fileContent);
+                        Storage::put($filePath, $encryptedContent);
+                    }
+
+                    $instance->{$field['field']} = $filePath;
                 }
-
-                $instance->{$field['field']} = $filePath;
             }
         }
 
@@ -90,22 +110,51 @@ class AutoCrudController extends Controller
         foreach ($instance::getFormFields() as $field) {
             if ($field['type'] === 'image' || $field['type'] === 'file') {
                 if ($request->input($field['field'] . '_edited')) {
-                    Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
+                    // Eliminar archivos anteriores
+                    if (isset($field['multiple']) && $field['multiple']) {
+                        // Múltiples archivos - eliminar todos los archivos existentes
+                        $existingFiles = json_decode($instance->{$field['field']}, true) ?? [];
+                        foreach ($existingFiles as $existingFile) {
+                            Storage::delete($existingFile);
+                        }
+                    } else {
+                        Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
+                    }
                     $validatedData[$field['field']] = null;
                 }
                 if ($request->hasFile($field['field'])) {
                     $storagePath = $field['public'] ? 'public/' : 'private/';
                     $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
                     $storagePath .= $model;
-                    $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id);
 
-                    if (!$field['public'] && $field['type'] === 'file') {
-                        $fileContent = Storage::get($filePath);
-                        $encryptedContent = Crypt::encryptString($fileContent);
-                        Storage::put($filePath, $encryptedContent);
+                    // Múltiples archivos
+                    if (isset($field['multiple']) && $field['multiple'] && is_array($request->file($field['field']))) {
+                        $filePaths = [];
+                        foreach ($request->file($field['field']) as $index => $file) {
+                            $fileName = $field['field'] . '/' . $id . '_' . $index . '_' . $file->getClientOriginalName();
+                            $filePath = $file->storeAs($storagePath, $fileName);
+
+                            if (!$field['public'] && $field['type'] === 'file') {
+                                $fileContent = Storage::get($filePath);
+                                $encryptedContent = Crypt::encryptString($fileContent);
+                                Storage::put($filePath, $encryptedContent);
+                            }
+
+                            $filePaths[] = $filePath;
+                        }
+                        $validatedData[$field['field']] = json_encode($filePaths);
+                    } else {
+                        // Archivo único
+                        $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id);
+
+                        if (!$field['public'] && $field['type'] === 'file') {
+                            $fileContent = Storage::get($filePath);
+                            $encryptedContent = Crypt::encryptString($fileContent);
+                            Storage::put($filePath, $encryptedContent);
+                        }
+
+                        $validatedData[$field['field']] = $filePath;
                     }
-
-                    $validatedData[$field['field']] = $filePath;
                 }
             }
 

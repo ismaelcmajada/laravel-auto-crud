@@ -205,6 +205,30 @@ function getValueByNestedKey(obj, key) {
   }, obj)
 }
 
+// Helpers para archivos
+const isJsonArray = (value) => {
+  if (!value || typeof value !== "string") return false
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed)
+  } catch {
+    return false
+  }
+}
+
+const parseJsonArray = (value) => {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return []
+  }
+}
+
+const getFileName = (filePath) => {
+  if (!filePath) return ""
+  return filePath.split("/").pop()
+}
+
 const showHistoryDialog = ref(false)
 
 const openHistoryDialog = (historyItem) => {
@@ -535,6 +559,43 @@ watch(item, (value) => {
                 "
                 :title="'Click para ampliar'"
               ></v-img>
+            </template>
+
+            <!-- Si el header tiene type file -->
+            <template v-else-if="header.type === 'file' && item[header.key]">
+              <!-- Múltiples archivos (JSON array) -->
+              <template v-if="isJsonArray(item[header.key])">
+                <v-btn
+                  v-for="(filePath, idx) in parseJsonArray(item[header.key])"
+                  :key="idx"
+                  icon
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :href="`/laravel-auto-crud/${filePath}`"
+                  target="_blank"
+                  class="ma-1"
+                >
+                  <v-icon>mdi-download</v-icon>
+                  <v-tooltip activator="parent">{{
+                    getFileName(filePath)
+                  }}</v-tooltip>
+                </v-btn>
+              </template>
+              <!-- Archivo único -->
+              <template v-else>
+                <v-btn
+                  icon
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :href="`/laravel-auto-crud/${item[header.key]}`"
+                  target="_blank"
+                >
+                  <v-icon>mdi-download</v-icon>
+                  <v-tooltip activator="parent">Descargar</v-tooltip>
+                </v-btn>
+              </template>
             </template>
 
             <!-- Si no, usamos el valor normal -->
