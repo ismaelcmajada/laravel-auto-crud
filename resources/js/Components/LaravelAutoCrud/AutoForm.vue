@@ -249,17 +249,19 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
 }
 
 const clearFileInput = (fileFieldName) => {
-  formData[fileFieldName] = null
   if (!filesToDelete.value[fileFieldName]?.length) {
-    // No hay archivos marcados para eliminar, quitar dirty
+    // No hay archivos marcados para eliminar, resetear el campo a su valor por defecto
+    formData.defaults(fileFieldName, null)
+    formData.reset(fileFieldName)
+    // Limpiar también el transform
     formData.transform((data) => {
       const newData = { ...data }
       delete newData[fileFieldName + "_edited"]
-      newData[fileFieldName] = null
       return newData
     })
   } else {
-    // Hay archivos marcados para eliminar, mantener dirty
+    // Hay archivos marcados para eliminar, solo limpiar el campo pero mantener dirty
+    formData[fileFieldName] = null
     formData.transform((data) => ({
       ...data,
       [fileFieldName]: null,
