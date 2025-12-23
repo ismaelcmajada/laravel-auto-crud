@@ -64,7 +64,6 @@ const storeExternalShortcutShows = ref({})
 const imagePreview = ref({})
 const filePreview = ref({})
 const filesToDelete = ref({})
-const newFiles = ref({})
 
 const getRelations = () => {
   const relationsFromFormFields = filteredFormFields.value.filter(
@@ -101,9 +100,8 @@ const formData = useForm(
 )
 
 const initFields = () => {
-  // Resetear archivos a eliminar y nuevos
+  // Resetear archivos a eliminar
   filesToDelete.value = {}
-  newFiles.value = {}
 
   if (type.value === "edit" && item.value) {
     filteredFormFields.value.forEach((field) => {
@@ -217,18 +215,12 @@ const handleImageUpload = (file, imageFieldName) => {
 const handleFileUpload = (file, fileFieldName, multiple = false) => {
   if (file && file.target.files.length > 0) {
     if (multiple) {
-      // Múltiples archivos - acumular en newFiles
-      if (!newFiles.value[fileFieldName]) {
-        newFiles.value[fileFieldName] = []
-      }
+      // Múltiples archivos
       const files = Array.from(file.target.files)
-      newFiles.value[fileFieldName].push(...files)
-
-      // Actualizar formData para activar dirty y enviar archivos
-      formData[fileFieldName] = newFiles.value[fileFieldName]
+      formData[fileFieldName] = files
       formData.transform((data) => ({
         ...data,
-        [fileFieldName]: newFiles.value[fileFieldName],
+        [fileFieldName]: files,
         [fileFieldName + "_edited"]: true,
       }))
     } else {
@@ -239,21 +231,17 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
         [fileFieldName + "_edited"]: true,
       }))
     }
-  }
-}
-
-const removeNewFile = (fileFieldName, index) => {
-  if (newFiles.value[fileFieldName]) {
-    newFiles.value[fileFieldName].splice(index, 1)
-    formData[fileFieldName] =
-      newFiles.value[fileFieldName].length > 0
-        ? newFiles.value[fileFieldName]
-        : null
-    formData.transform((data) => ({
-      ...data,
-      [fileFieldName]: formData[fileFieldName],
-      [fileFieldName + "_edited"]: true,
-    }))
+  } else {
+    // Si se vacía el input, quitar dirty solo si no hay archivos a eliminar
+    formData[fileFieldName] = null
+    if (!filesToDelete.value[fileFieldName]?.length) {
+      formData[fileFieldName + "_edited"] = false
+      formData.transform((data) => {
+        const newData = { ...data }
+        delete newData[fileFieldName + "_edited"]
+        return newData
+      })
+    }
   }
 }
 
@@ -556,44 +544,6 @@ watch(isFormDirty, (value) => {
                       icon
                       size="small"
                       @click="removeFile(field.field, index)"
-                      color="red"
-                    >
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
-                  </v-col>
-                </v-row>
-              </div>
-
-              <!-- Preview archivos nuevos pendientes de guardar -->
-              <div
-                v-if="
-                  field.multiple &&
-                  newFiles[field.field] &&
-                  newFiles[field.field].length > 0
-                "
-              >
-                <v-divider
-                  v-if="filePreview[field.field]?.length"
-                  class="my-2"
-                ></v-divider>
-                <small class="text-grey"
-                  >Archivos nuevos (pendientes de guardar):</small
-                >
-                <v-row
-                  v-for="(file, index) in newFiles[field.field]"
-                  :key="'new-' + index"
-                  class="align-center justify-center my-2 mx-1 elevation-2 rounded pa-2 bg-green-lighten-5"
-                >
-                  <v-col cols="12" md="10" class="text-center">
-                    <v-icon size="small" class="mr-1">mdi-file-plus</v-icon>
-                    {{ file.name }}
-                  </v-col>
-
-                  <v-col cols="12" md="2" class="text-center">
-                    <v-btn
-                      icon
-                      size="small"
-                      @click="removeNewFile(field.field, index)"
                       color="red"
                     >
                       <v-icon>mdi-delete</v-icon>
