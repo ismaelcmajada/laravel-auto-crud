@@ -287,7 +287,6 @@ trait AutoCrud
                     'title' => $externalRelation['name'],
                     'key' => $externalRelation['relation'],
                     'sortable' => false,
-                    'searchable' => false,
                     'align' => 'center',
                 ];
             }
