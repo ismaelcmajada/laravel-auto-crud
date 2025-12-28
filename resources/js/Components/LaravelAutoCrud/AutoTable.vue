@@ -486,75 +486,111 @@ watch(item, (value) => {
       </v-col>
     </v-row>
 
+    <!-- Header de búsqueda por columna -->
+    <v-row class="align-center my-2 mx-1 rounded pa-2">
+      <v-col
+        v-for="header in finalHeaders.filter(
+          (h) => h.key !== 'actions' && h.searchable !== false
+        )"
+        :key="header.key"
+      >
+        <v-text-field
+          v-model="tableData.search[header.key]"
+          @input="updateItems"
+          :label="header.title"
+          type="text"
+          variant="underlined"
+          density="compact"
+          hide-details
+        ></v-text-field>
+      </v-col>
+      <v-col cols="auto"></v-col>
+    </v-row>
+
     <!-- Items en modo lista -->
     <template v-for="listItem in tableData.items" :key="listItem.id">
       <v-row
         class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
         :class="{ 'bg-red-lighten-4': tableData.deleted }"
       >
-        <!-- Contenido principal -->
-        <v-col class="my-3">
-          <div class="d-flex flex-wrap align-center ga-2">
-            <template
-              v-for="header in finalHeaders.filter((h) => h.key !== 'actions')"
-              :key="header.key"
-            >
-              <slot :name="`item.${header.key}`" :item="listItem">
+        <!-- Columnas de datos -->
+        <v-col
+          v-for="header in finalHeaders.filter((h) => h.key !== 'actions')"
+          :key="header.key"
+        >
+          <slot :name="`item.${header.key}`" :item="listItem">
+            <div class="text-caption text-grey">{{ header.title }}</div>
+            <div>
+              <!-- Si header tiene relation y tableKey (belongsTo) -->
+              <template v-if="header.relation && header.relation.tableKey">
+                {{
+                  generateItemTitle(
+                    header.relation.tableKey,
+                    listItem[header.relation.relation]
+                  )
+                }}
+              </template>
+              <!-- Si es una externalRelation -->
+              <template v-else-if="externalRelationsMap[header.key]">
                 <v-chip
-                  v-if="
-                    getValueByNestedKey(listItem, header.key) !== undefined &&
-                    getValueByNestedKey(listItem, header.key) !== null &&
-                    getValueByNestedKey(listItem, header.key) !== ''
-                  "
+                  v-for="relItem in listItem[header.key]?.slice(0, 3)"
+                  :key="relItem.id"
                   size="small"
-                  variant="tonal"
-                  class="text-caption"
+                  class="mr-1"
                 >
-                  <span class="font-weight-medium mr-1"
-                    >{{ header.title }}:</span
-                  >
-                  <!-- Si header tiene relation y tableKey (belongsTo) -->
-                  <template v-if="header.relation && header.relation.tableKey">
-                    {{
-                      generateItemTitle(
-                        header.relation.tableKey,
-                        listItem[header.relation.relation]
-                      )
-                    }}
-                  </template>
-                  <!-- Si es una externalRelation -->
-                  <template v-else-if="externalRelationsMap[header.key]">
-                    {{ listItem[header.key]?.length || 0 }} items
-                  </template>
-                  <!-- Si el header tiene type image -->
-                  <template v-else-if="header.type === 'image'">
-                    <v-avatar size="24" class="ml-1">
-                      <v-img
-                        :src="`/laravel-auto-crud/${listItem[header.key]}`"
-                        @click.stop="
-                          openImageDialog(
-                            `/laravel-auto-crud/${listItem[header.key]}`,
-                            listItem[header.key]
-                          )
-                        "
-                        class="cursor-pointer"
-                      ></v-img>
-                    </v-avatar>
-                  </template>
-                  <!-- Si el header tiene type file -->
-                  <template
-                    v-else-if="header.type === 'file' && listItem[header.key]"
-                  >
-                    <v-icon size="small" class="ml-1">mdi-file</v-icon>
-                  </template>
-                  <!-- Valor normal -->
-                  <template v-else>
-                    {{ getValueByNestedKey(listItem, header.key) }}
-                  </template>
+                  {{
+                    generateItemTitle(
+                      externalRelationsMap[header.key].tableKey,
+                      relItem
+                    )
+                  }}
                 </v-chip>
-              </slot>
-            </template>
-          </div>
+                <v-chip
+                  v-if="listItem[header.key]?.length > 3"
+                  size="small"
+                  color="grey"
+                >
+                  +{{ listItem[header.key].length - 3 }}
+                </v-chip>
+              </template>
+              <!-- Si el header tiene type image -->
+              <template
+                v-else-if="header.type === 'image' && listItem[header.key]"
+              >
+                <v-avatar size="40">
+                  <v-img
+                    :src="`/laravel-auto-crud/${listItem[header.key]}`"
+                    @click.stop="
+                      openImageDialog(
+                        `/laravel-auto-crud/${listItem[header.key]}`,
+                        listItem[header.key]
+                      )
+                    "
+                    class="cursor-pointer"
+                  ></v-img>
+                </v-avatar>
+              </template>
+              <!-- Si el header tiene type file -->
+              <template
+                v-else-if="header.type === 'file' && listItem[header.key]"
+              >
+                <v-btn
+                  icon
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :href="`/laravel-auto-crud/${listItem[header.key]}`"
+                  target="_blank"
+                >
+                  <v-icon>mdi-download</v-icon>
+                </v-btn>
+              </template>
+              <!-- Valor normal -->
+              <template v-else>
+                {{ getValueByNestedKey(listItem, header.key) }}
+              </template>
+            </div>
+          </slot>
         </v-col>
         <!-- Acciones -->
         <v-col class="text-end">
