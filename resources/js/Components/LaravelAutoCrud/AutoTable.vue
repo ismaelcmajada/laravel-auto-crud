@@ -31,6 +31,7 @@ const props = defineProps([
   "itemsPerPageOptions",
   "customHeaders",
   "hideReset",
+  "listMode",
 ])
 
 const emit = defineEmits([
@@ -405,7 +406,287 @@ watch(item, (value) => {
     :endPoint="endPoint"
   />
 
-  <v-card elevation="6" class="ma-5" variant="outlined">
+  <!-- MODO LISTA -->
+  <v-card v-if="props.listMode" elevation="0" class="ma-2" variant="flat">
+    <!-- Toolbar del modo lista -->
+    <v-toolbar
+      :class="{ 'bg-red-lighten-2': tableData.deleted }"
+      density="compact"
+      flat
+    >
+      <v-toolbar-title class="text-subtitle-1">
+        <span>{{ title }}</span>
+      </v-toolbar-title>
+      <v-spacer></v-spacer>
+      <slot
+        name="table.actions.prepend"
+        :openDialog="openDialog"
+        :resetTable="resetTable"
+        :tableData="tableData"
+        :loadItems="loadItems"
+      ></slot>
+      <slot
+        name="table.actions"
+        :openDialog="openDialog"
+        :resetTable="resetTable"
+        :tableData="tableData"
+        :loadItems="loadItems"
+      >
+        <template v-if="!tableData.deleted && !hideReset">
+          <v-btn
+            icon
+            size="small"
+            @click="resetTable(props.search, props.orderBy)"
+          >
+            <v-icon size="small">mdi-refresh</v-icon>
+            <v-tooltip activator="parent">Recargar</v-tooltip>
+          </v-btn>
+        </template>
+        <template v-if="!tableData.deleted">
+          <v-btn
+            v-if="forbiddenActions.indexOf('store') === -1"
+            icon
+            size="small"
+            @click="openDialog('create')"
+          >
+            <v-icon size="small">mdi-plus</v-icon>
+            <v-tooltip activator="parent">Crear</v-tooltip>
+          </v-btn>
+        </template>
+        <v-btn
+          v-if="
+            forbiddenActions.indexOf('restore') === -1 ||
+            forbiddenActions.indexOf('destroyPermanent') === -1
+          "
+          :active="tableData.deleted"
+          icon
+          size="small"
+          @click="tableData.deleted = !tableData.deleted"
+        >
+          <v-icon size="small">mdi-delete-variant</v-icon>
+          <v-tooltip activator="parent">{{
+            tableData.deleted ? "Ver activos" : "Ver eliminados"
+          }}</v-tooltip>
+        </v-btn>
+      </slot>
+      <slot
+        name="table.actions.append"
+        :openDialog="openDialog"
+        :resetTable="resetTable"
+        :tableData="tableData"
+        :loadItems="loadItems"
+      ></slot>
+    </v-toolbar>
+
+    <!-- Items en modo lista -->
+    <v-list density="compact" class="pa-0">
+      <template v-for="listItem in tableData.items" :key="listItem.id">
+        <v-list-item
+          class="elevation-2 rounded my-2 mx-1"
+          :class="{ 'bg-red-lighten-4': tableData.deleted }"
+        >
+          <template v-slot:default>
+            <v-row align="center" class="flex-nowrap" no-gutters>
+              <!-- Contenido principal -->
+              <v-col class="flex-grow-1 overflow-hidden">
+                <div class="d-flex flex-wrap align-center ga-2">
+                  <template
+                    v-for="header in finalHeaders.filter(
+                      (h) => h.key !== 'actions'
+                    )"
+                    :key="header.key"
+                  >
+                    <slot :name="`item.${header.key}`" :item="listItem">
+                      <v-chip
+                        v-if="
+                          getValueByNestedKey(listItem, header.key) !==
+                            undefined &&
+                          getValueByNestedKey(listItem, header.key) !== null &&
+                          getValueByNestedKey(listItem, header.key) !== ''
+                        "
+                        size="small"
+                        variant="tonal"
+                        class="text-caption"
+                      >
+                        <span class="font-weight-medium mr-1"
+                          >{{ header.title }}:</span
+                        >
+                        <!-- Si header tiene relation y tableKey (belongsTo) -->
+                        <template
+                          v-if="header.relation && header.relation.tableKey"
+                        >
+                          {{
+                            generateItemTitle(
+                              header.relation.tableKey,
+                              listItem[header.relation.relation]
+                            )
+                          }}
+                        </template>
+                        <!-- Si es una externalRelation -->
+                        <template v-else-if="externalRelationsMap[header.key]">
+                          {{ listItem[header.key]?.length || 0 }} items
+                        </template>
+                        <!-- Si el header tiene type image -->
+                        <template v-else-if="header.type === 'image'">
+                          <v-avatar size="24" class="ml-1">
+                            <v-img
+                              :src="`/laravel-auto-crud/${
+                                listItem[header.key]
+                              }`"
+                              @click.stop="
+                                openImageDialog(
+                                  `/laravel-auto-crud/${listItem[header.key]}`,
+                                  listItem[header.key]
+                                )
+                              "
+                              class="cursor-pointer"
+                            ></v-img>
+                          </v-avatar>
+                        </template>
+                        <!-- Si el header tiene type file -->
+                        <template
+                          v-else-if="
+                            header.type === 'file' && listItem[header.key]
+                          "
+                        >
+                          <v-icon size="small" class="ml-1">mdi-file</v-icon>
+                        </template>
+                        <!-- Valor normal -->
+                        <template v-else>
+                          {{ getValueByNestedKey(listItem, header.key) }}
+                        </template>
+                      </v-chip>
+                    </slot>
+                  </template>
+                </div>
+              </v-col>
+              <!-- Acciones -->
+              <v-col class="flex-grow-0">
+                <div class="d-flex align-center">
+                  <slot
+                    name="item.actions.prepend"
+                    :item="listItem"
+                    :openDialog="openDialog"
+                    :resetTable="resetTable"
+                    :tableData="tableData"
+                    :loadItems="loadItems"
+                    :forbiddenActions="forbiddenActions"
+                  ></slot>
+                  <slot
+                    name="item.actions"
+                    :item="listItem"
+                    :openDialog="openDialog"
+                    :resetTable="resetTable"
+                    :tableData="tableData"
+                    :loadItems="loadItems"
+                    :forbiddenActions="forbiddenActions"
+                  >
+                    <v-btn
+                      v-if="
+                        listItem.records?.length > 0 &&
+                        forbiddenActions.indexOf('showRecords') === -1
+                      "
+                      density="compact"
+                      variant="text"
+                      icon
+                      size="small"
+                      @click="openHistoryDialog(listItem)"
+                    >
+                      <v-icon size="small">mdi-history</v-icon>
+                      <v-tooltip activator="parent">Historial</v-tooltip>
+                    </v-btn>
+                    <v-btn
+                      v-if="
+                        !tableData.deleted &&
+                        forbiddenActions.indexOf('update') === -1
+                      "
+                      density="compact"
+                      variant="text"
+                      icon
+                      size="small"
+                      @click="openDialog('edit', listItem)"
+                    >
+                      <v-icon size="small">mdi-pencil</v-icon>
+                      <v-tooltip activator="parent">Editar</v-tooltip>
+                    </v-btn>
+                    <v-btn
+                      v-if="
+                        !tableData.deleted &&
+                        forbiddenActions.indexOf('destroy') === -1
+                      "
+                      density="compact"
+                      variant="text"
+                      icon
+                      size="small"
+                      @click="openDialog('destroy', listItem)"
+                    >
+                      <v-icon size="small">mdi-delete</v-icon>
+                      <v-tooltip activator="parent">Eliminar</v-tooltip>
+                    </v-btn>
+                    <v-btn
+                      v-if="
+                        tableData.deleted &&
+                        forbiddenActions.indexOf('restore') === -1
+                      "
+                      density="compact"
+                      variant="text"
+                      icon
+                      size="small"
+                      @click="openDialog('restore', listItem)"
+                    >
+                      <v-icon size="small">mdi-restore</v-icon>
+                      <v-tooltip activator="parent">Restaurar</v-tooltip>
+                    </v-btn>
+                    <v-btn
+                      v-if="
+                        tableData.deleted &&
+                        forbiddenActions.indexOf('destroyPermanent') === -1
+                      "
+                      density="compact"
+                      variant="text"
+                      icon
+                      size="small"
+                      @click="openDialog('destroyPermanent', listItem)"
+                    >
+                      <v-icon size="small">mdi-delete-alert</v-icon>
+                      <v-tooltip activator="parent"
+                        >Eliminar permanente</v-tooltip
+                      >
+                    </v-btn>
+                  </slot>
+                  <slot
+                    name="item.actions.append"
+                    :item="listItem"
+                    :openDialog="openDialog"
+                    :resetTable="resetTable"
+                    :tableData="tableData"
+                    :loadItems="loadItems"
+                    :forbiddenActions="forbiddenActions"
+                  ></slot>
+                </div>
+              </v-col>
+            </v-row>
+          </template>
+        </v-list-item>
+      </template>
+    </v-list>
+
+    <!-- Paginación modo lista -->
+    <v-pagination
+      v-if="tableData.itemsLength > tableData.itemsPerPage"
+      v-model="tableData.page"
+      :length="Math.ceil(tableData.itemsLength / tableData.itemsPerPage)"
+      density="compact"
+      size="small"
+      class="my-2"
+      @update:modelValue="loadItems()"
+    ></v-pagination>
+
+    <loading-overlay v-if="loading" />
+  </v-card>
+
+  <!-- MODO TABLA (original) -->
+  <v-card v-else elevation="6" class="ma-5" variant="outlined">
     <v-data-table-server
       multi-sort
       :loading="loading"
