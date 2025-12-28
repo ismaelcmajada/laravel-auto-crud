@@ -787,7 +787,7 @@ if (props.externalRelation.pivotFields) {
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"
-      listMode
+      :listMode="true"
     />
   </template>
 </template>
