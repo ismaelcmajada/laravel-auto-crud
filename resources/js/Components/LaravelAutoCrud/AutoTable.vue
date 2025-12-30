@@ -48,8 +48,53 @@ const model = computed(() => {
 
 // Modelo dinámico actualizado desde el servidor (incluye formFields y tableHeaders)
 const dynamicModel = computed(() => {
-  // Si hay modelo del servidor, usarlo; sino usar el de props
-  return serverModel.value || props.model
+  // Si no hay modelo del servidor, usar el de props
+  if (!serverModel.value) {
+    return props.model
+  }
+
+  // Si estamos en listMode, necesitamos preservar las modificaciones de formFields
+  // del props.model (como hidden y default del FK en relaciones hasMany)
+  if (props.listMode && props.model?.formFields) {
+    // Crear un mapa de las modificaciones del props.model
+    const propsFieldsMap = {}
+    props.model.formFields.forEach((field) => {
+      if (field.hidden || field.default !== undefined) {
+        propsFieldsMap[field.field] = {
+          hidden: field.hidden,
+          default: field.default,
+        }
+      }
+    })
+
+    // Fusionar las modificaciones en los formFields del servidor
+    const mergedFormFields = serverModel.value.formFields.map((field) => {
+      if (propsFieldsMap[field.field]) {
+        return {
+          ...field,
+          ...propsFieldsMap[field.field],
+        }
+      }
+      return field
+    })
+
+    // Filtrar tableHeaders igual que en props.model
+    const propsHeaderKeys = props.model.tableHeaders.map((h) => h.key)
+    const mergedTableHeaders = serverModel.value.tableHeaders.filter((h) =>
+      propsHeaderKeys.includes(h.key)
+    )
+
+    return {
+      ...serverModel.value,
+      formFields: mergedFormFields,
+      tableHeaders:
+        mergedTableHeaders.length > 0
+          ? mergedTableHeaders
+          : serverModel.value.tableHeaders,
+    }
+  }
+
+  return serverModel.value
 })
 
 const forbiddenActions =
