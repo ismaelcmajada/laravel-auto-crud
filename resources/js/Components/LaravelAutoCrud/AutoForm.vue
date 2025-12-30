@@ -111,6 +111,9 @@ const initFields = () => {
       if (field.type === "password") {
         formData[field.field] = ""
         field.rules.required = false
+      } else if (field.type === "boolean") {
+        // Convertir a booleano real (puede venir como 1, 0, "1", "0", true, false)
+        formData[field.field] = Boolean(Number(item.value[field.field]))
       } else if (field.type === "date") {
         if (item.value[field.field]) {
           formData[field.field] = formatDate(item.value[field.field])
@@ -162,7 +165,12 @@ const initFields = () => {
     })
   } else if (type.value === "create") {
     filteredFormFields.value.forEach((field) => {
-      formData[field.field] = field.default ?? null
+      // Booleanos: inicializar a false por defecto
+      if (field.type === "boolean") {
+        formData[field.field] = field.default ?? false
+      } else {
+        formData[field.field] = field.default ?? null
+      }
 
       if (item.value?.[field.field] && field.type === "date") {
         formData[field.field] = formatDate(item.value[field.field])
