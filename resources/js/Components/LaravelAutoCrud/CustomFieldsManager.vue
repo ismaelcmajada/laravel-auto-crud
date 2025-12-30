@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue"
-import axios from "axios"
+import { useForm, router } from "@inertiajs/vue3"
 
 const props = defineProps({
   modelName: {
@@ -12,7 +12,15 @@ const props = defineProps({
 const emit = defineEmits(["updated"])
 
 const customFields = ref([])
-const fieldTypes = ref([])
+const fieldTypes = ref([
+  { value: "string", label: "Texto corto" },
+  { value: "number", label: "Número" },
+  { value: "text", label: "Texto largo" },
+  { value: "boolean", label: "Sí/No" },
+  { value: "date", label: "Fecha" },
+  { value: "datetime", label: "Fecha y hora" },
+  { value: "select", label: "Selección" },
+])
 const loading = ref(false)
 const dialog = ref(false)
 const editingField = ref(null)
@@ -26,16 +34,16 @@ const defaultField = {
   show_in_table: false,
 }
 
-const formData = ref({ ...defaultField })
+const formData = useForm({ ...defaultField })
 const optionsInput = ref("")
 
 const loadCustomFields = async () => {
   loading.value = true
   try {
-    const response = await axios.get(
+    const response = await fetch(
       `/laravel-auto-crud/custom-fields/${props.modelName}`
     )
-    customFields.value = response.data
+    customFields.value = await response.json()
   } catch (error) {
     console.error("Error loading custom fields:", error)
   } finally {
@@ -43,23 +51,19 @@ const loadCustomFields = async () => {
   }
 }
 
-const loadFieldTypes = async () => {
-  try {
-    const response = await axios.get("/laravel-auto-crud/custom-fields-types")
-    fieldTypes.value = response.data
-  } catch (error) {
-    console.error("Error loading field types:", error)
-  }
-}
-
 const openDialog = (field = null) => {
   if (field) {
     editingField.value = field
-    formData.value = { ...field }
+    formData.label = field.label
+    formData.type = field.type
+    formData.options = field.options || []
+    formData.rules = field.rules || { required: false }
+    formData.is_active = field.is_active
+    formData.show_in_table = field.show_in_table
     optionsInput.value = field.options?.join(", ") || ""
   } else {
     editingField.value = null
-    formData.value = { ...defaultField }
+    formData.reset()
     optionsInput.value = ""
   }
   dialog.value = true
@@ -68,72 +72,54 @@ const openDialog = (field = null) => {
 const closeDialog = () => {
   dialog.value = false
   editingField.value = null
-  formData.value = { ...defaultField }
+  formData.reset()
   optionsInput.value = ""
 }
 
-const saveField = async () => {
-  loading.value = true
-  try {
-    const data = { ...formData.value }
-
-    if (data.type === "select" && optionsInput.value) {
-      data.options = optionsInput.value.split(",").map((o) => o.trim())
-    }
-
-    if (editingField.value) {
-      await axios.put(
-        `/laravel-auto-crud/custom-fields/${props.modelName}/${editingField.value.id}`,
-        data
-      )
-    } else {
-      await axios.post(
-        `/laravel-auto-crud/custom-fields/${props.modelName}`,
-        data
-      )
-    }
-
-    await loadCustomFields()
-    closeDialog()
-    emit("updated")
-  } catch (error) {
-    console.error("Error saving custom field:", error)
-  } finally {
-    loading.value = false
+const saveField = () => {
+  if (formData.type === "select" && optionsInput.value) {
+    formData.options = optionsInput.value.split(",").map((o) => o.trim())
   }
+
+  const url = editingField.value
+    ? `/laravel-auto-crud/custom-fields/${props.modelName}/${editingField.value.id}`
+    : `/laravel-auto-crud/custom-fields/${props.modelName}`
+
+  formData.post(url, {
+    onSuccess: () => {
+      loadCustomFields()
+      closeDialog()
+      emit("updated")
+    },
+  })
 }
 
-const deleteField = async (field) => {
+const deleteField = (field) => {
   if (!confirm(`¿Eliminar el campo "${field.label}"?`)) return
 
-  loading.value = true
-  try {
-    await axios.delete(
-      `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}`
-    )
-    await loadCustomFields()
-    emit("updated")
-  } catch (error) {
-    console.error("Error deleting custom field:", error)
-  } finally {
-    loading.value = false
-  }
+  router.post(
+    `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}/destroy`,
+    {},
+    {
+      onSuccess: () => {
+        loadCustomFields()
+        emit("updated")
+      },
+    }
+  )
 }
 
-const toggleActive = async (field) => {
-  loading.value = true
-  try {
-    await axios.put(
-      `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}`,
-      { is_active: !field.is_active }
-    )
-    await loadCustomFields()
-    emit("updated")
-  } catch (error) {
-    console.error("Error toggling field:", error)
-  } finally {
-    loading.value = false
-  }
+const toggleActive = (field) => {
+  router.post(
+    `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}`,
+    { is_active: !field.is_active },
+    {
+      onSuccess: () => {
+        loadCustomFields()
+        emit("updated")
+      },
+    }
+  )
 }
 
 const getTypeName = (type) => {
@@ -143,7 +129,6 @@ const getTypeName = (type) => {
 
 onMounted(() => {
   loadCustomFields()
-  loadFieldTypes()
 })
 </script>
 

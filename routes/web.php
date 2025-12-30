@@ -27,8 +27,8 @@ Route::middleware('web')->group(function () {
         Route::prefix('custom-fields/{model}')->group(function () {
             Route::get('/', [CustomFieldDefinitionController::class, 'index'])->name('laravel-auto-crud.custom-fields.index');
             Route::post('/', [CustomFieldDefinitionController::class, 'store'])->name('laravel-auto-crud.custom-fields.store');
-            Route::put('/{id}', [CustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.custom-fields.update');
-            Route::delete('/{id}', [CustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.custom-fields.destroy');
+            Route::post('/{id}', [CustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.custom-fields.update');
+            Route::post('/{id}/destroy', [CustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.custom-fields.destroy');
             Route::post('/reorder', [CustomFieldDefinitionController::class, 'reorder'])->name('laravel-auto-crud.custom-fields.reorder');
         });
 
