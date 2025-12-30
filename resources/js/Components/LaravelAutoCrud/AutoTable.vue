@@ -9,6 +9,7 @@ import useTableServer from "../../Composables/LaravelAutoCrud/useTableServer"
 import useDialogs from "../../Composables/LaravelAutoCrud/useDialogs"
 import HistoryDialog from "./HistoryDialog.vue"
 import ImageDialog from "./ImageDialog.vue"
+import CustomFieldsManager from "./CustomFieldsManager.vue"
 import { usePage } from "@inertiajs/vue3"
 import { useDisplay } from "vuetify"
 import { computed, watch, ref, onMounted } from "vue"
@@ -236,6 +237,24 @@ const openHistoryDialog = (historyItem) => {
   showHistoryDialog.value = true
 }
 
+// Custom Fields Dialog
+const showCustomFieldsDialog = ref(false)
+
+const modelName = computed(() => {
+  // Extraer nombre del modelo desde el endpoint: /laravel-auto-crud/product -> product
+  const endpoint = model.value.endPoint || ""
+  return endpoint.replace("/laravel-auto-crud/", "")
+})
+
+const customFieldsEnabled = computed(() => {
+  return model.value.customFieldsEnabled === true
+})
+
+const onCustomFieldsUpdated = () => {
+  // Recargar la página para obtener los nuevos campos
+  window.location.reload()
+}
+
 // Image dialog
 const showImageDialog = ref(false)
 const currentImageUrl = ref("")
@@ -388,6 +407,26 @@ watch(item, (value) => {
     @close-dialog="closeImageDialog"
   />
 
+  <!-- Custom Fields Manager Dialog -->
+  <v-dialog v-model="showCustomFieldsDialog" max-width="600" scrollable>
+    <v-card>
+      <v-card-title class="d-flex align-center">
+        <span>Gestionar Campos Personalizados</span>
+        <v-spacer></v-spacer>
+        <v-btn icon variant="text" @click="showCustomFieldsDialog = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-card-title>
+      <v-card-text>
+        <custom-fields-manager
+          v-if="showCustomFieldsDialog"
+          :model-name="modelName"
+          @updated="onCustomFieldsUpdated"
+        />
+      </v-card-text>
+    </v-card>
+  </v-dialog>
+
   <destroy-dialog
     :show="showDestroyDialog"
     @closeDialog="showDestroyDialog = false"
@@ -474,6 +513,19 @@ watch(item, (value) => {
             <v-tooltip activator="parent">{{
               tableData.deleted ? "Ver activos" : "Ver eliminados"
             }}</v-tooltip>
+          </v-btn>
+          <v-btn
+            v-if="
+              customFieldsEnabled &&
+              forbiddenActions.indexOf('manageCustomFields') === -1
+            "
+            icon
+            density="compact"
+            variant="text"
+            @click="showCustomFieldsDialog = true"
+          >
+            <v-icon>mdi-form-textbox</v-icon>
+            <v-tooltip activator="parent">Campos personalizados</v-tooltip>
           </v-btn>
         </slot>
         <slot
@@ -766,6 +818,18 @@ watch(item, (value) => {
               <v-tooltip activator="parent">{{
                 tableData.deleted ? "Ver activos" : "Ver eliminados"
               }}</v-tooltip>
+            </v-btn>
+
+            <v-btn
+              v-if="
+                customFieldsEnabled &&
+                forbiddenActions.indexOf('manageCustomFields') === -1
+              "
+              icon
+              @click="showCustomFieldsDialog = true"
+            >
+              <v-icon>mdi-form-textbox</v-icon>
+              <v-tooltip activator="parent">Campos personalizados</v-tooltip>
             </v-btn>
           </slot>
           <slot

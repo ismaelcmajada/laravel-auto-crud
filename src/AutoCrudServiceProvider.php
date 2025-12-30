@@ -29,6 +29,11 @@ class AutoCrudServiceProvider extends ServiceProvider
             // Composables
             __DIR__ . '/../resources/js/Composables/LaravelAutoCrud' => resource_path('js/Composables/LaravelAutoCrud'),
         ], 'laravel-auto-crud');
+
+        // Publish migrations for custom fields
+        $this->publishes([
+            __DIR__ . '/../database/migrations/create_custom_fields_tables.php.stub' => database_path('migrations/' . date('Y_m_d_His') . '_create_custom_fields_tables.php'),
+        ], 'laravel-auto-crud-migrations');
     }
 
     public function register()

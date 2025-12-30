@@ -142,8 +142,12 @@ const initFields = () => {
         }
         if (field.type === "select") {
           if (field.multiple) {
-            formData[field.field] = item.value[field.field].split(", ")
+            formData[field.field] = item.value[field.field]?.split(", ") || []
           }
+        }
+        // Custom fields: cargar valor si existe
+        if (field.isCustomField && item.value[field.field] !== undefined) {
+          formData[field.field] = item.value[field.field]
         }
       }
 
@@ -161,6 +165,11 @@ const initFields = () => {
 
       if (field.relation?.storeShortcut) {
         storeShortcutShows.value[field.field] = false
+      }
+
+      // Custom fields: inicializar con valor por defecto
+      if (field.isCustomField) {
+        formData[field.field] = field.default ?? null
       }
     })
   }

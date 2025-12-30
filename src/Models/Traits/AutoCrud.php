@@ -5,10 +5,13 @@ namespace Ismaelcmajada\LaravelAutoCrud\Models\Traits;
 use Illuminate\Support\Facades\Schema;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateTimeWithUserTimezone;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateWithUserTimezone;
+use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldDefinition;
+use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldValue;
 use App\Models\Record;
 
 trait AutoCrud
 {
+    protected static bool $customFieldsEnabled = false;
 
 
     protected $fillable = [];
@@ -140,7 +143,15 @@ trait AutoCrud
             }
         }
 
-        return array_values($formFields);
+        $formFields = array_values($formFields);
+
+        // Agregar custom fields si están habilitados
+        if (static::hasCustomFieldsEnabled()) {
+            $customFields = static::getCustomFieldsAsFormFields();
+            $formFields = array_merge($formFields, $customFields);
+        }
+
+        return $formFields;
     }
 
     public static function getTableFields()
@@ -254,6 +265,7 @@ trait AutoCrud
             'externalRelations' => static::getExternalRelations($processedModels),
             'forbiddenActions' => $forbiddenActions,
             'calendarFields' => static::getCalendarFields(),
+            'customFieldsEnabled' => static::hasCustomFieldsEnabled(),
         ];
     }
 
@@ -405,5 +417,67 @@ trait AutoCrud
     public function records()
     {
         return $this->morphMany(Record::class, 'recordable', 'model', 'element_id');
+    }
+
+    // ========== Custom Fields Support ==========
+
+    public static function hasCustomFieldsEnabled(): bool
+    {
+        return static::$customFieldsEnabled;
+    }
+
+    public static function getCustomFieldDefinitions()
+    {
+        if (!static::$customFieldsEnabled) {
+            return collect();
+        }
+
+        return CustomFieldDefinition::getFieldsForModel(static::class);
+    }
+
+    public static function getCustomFieldsAsFormFields(): array
+    {
+        if (!static::$customFieldsEnabled) {
+            return [];
+        }
+
+        return static::getCustomFieldDefinitions()
+            ->map(fn($definition) => $definition->toFormField())
+            ->toArray();
+    }
+
+    public function customFieldValues()
+    {
+        return $this->morphMany(CustomFieldValue::class, 'model', 'model_type', 'model_id');
+    }
+
+    public function getCustomFieldsValues(): array
+    {
+        if (!static::$customFieldsEnabled || !$this->exists) {
+            return [];
+        }
+
+        return CustomFieldValue::getValuesForModel(static::class, $this->id);
+    }
+
+    public function saveCustomFields(array $data): void
+    {
+        if (!static::$customFieldsEnabled) {
+            return;
+        }
+
+        $customData = collect($data)
+            ->filter(fn($value, $key) => str_starts_with($key, 'custom_'))
+            ->toArray();
+
+        if (!empty($customData)) {
+            CustomFieldValue::setValuesForModel(static::class, $this->id, $customData);
+        }
+    }
+
+    public function toArrayWithCustomFields(): array
+    {
+        $data = $this->toArray();
+        return array_merge($data, $this->getCustomFieldsValues());
     }
 }

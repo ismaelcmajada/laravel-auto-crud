@@ -33,6 +33,14 @@ class AutoCrudController extends Controller
 
         $item->load($modelInstance::getIncludes());
 
+        // Agregar custom fields si están habilitados
+        if ($modelInstance::hasCustomFieldsEnabled()) {
+            $customValues = $item->getCustomFieldsValues();
+            foreach ($customValues as $key => $value) {
+                $item->setAttribute($key, $value);
+            }
+        }
+
         return $item;
     }
 
@@ -98,7 +106,20 @@ class AutoCrudController extends Controller
 
         $created = $instance->save();
 
+        // Guardar custom fields si están habilitados
+        if ($modelInstance::hasCustomFieldsEnabled()) {
+            $instance->saveCustomFields($request->all());
+        }
+
         $instance->load($modelInstance::getIncludes());
+
+        // Agregar custom fields a la respuesta
+        if ($modelInstance::hasCustomFieldsEnabled()) {
+            $customValues = $instance->getCustomFieldsValues();
+            foreach ($customValues as $key => $value) {
+                $instance->setAttribute($key, $value);
+            }
+        }
 
         if ($created) {
             $this->setRecord($model, $instance->id, 'create');
@@ -181,7 +202,21 @@ class AutoCrudController extends Controller
         }
 
         $updated = $instance->update($validatedData);
+
+        // Guardar custom fields si están habilitados
+        if ($instance::hasCustomFieldsEnabled()) {
+            $instance->saveCustomFields($request->all());
+        }
+
         $instance->load($instance::getIncludes());
+
+        // Agregar custom fields a la respuesta
+        if ($instance::hasCustomFieldsEnabled()) {
+            $customValues = $instance->getCustomFieldsValues();
+            foreach ($customValues as $key => $value) {
+                $instance->setAttribute($key, $value);
+            }
+        }
 
         if ($updated) {
             $this->setRecord($model, $instance->id, 'update');

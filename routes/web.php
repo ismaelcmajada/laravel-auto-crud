@@ -8,6 +8,7 @@ use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\SessionController;
 use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\ImageController;
 use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\FileController;
 use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\CalendarController;
+use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\CustomFieldDefinitionController;
 
 Route::middleware('web')->group(function () {
     Route::get('/laravel-auto-crud/public/images/{model}/{field}/{id}', [ImageController::class, 'publicImage']);
@@ -39,5 +40,15 @@ Route::middleware('web')->group(function () {
         Route::post('/{model}/{id}/pivot/{externalRelation}/{item}', [AutoCrudController::class, 'updatePivot'])->name('laravel-auto-crud.model.updatePivot');
         Route::post('/{model}/{id}/bind/{externalRelation}/{item}', [AutoCrudController::class, 'bind'])->name('laravel-auto-crud.model.bind');
         Route::post('/{model}/{id}/unbind/{externalRelation}/{item}', [AutoCrudController::class, 'unbind'])->name('laravel-auto-crud.model.unbind');
+
+        // Custom Fields Management Routes
+        Route::prefix('custom-fields/{model}')->group(function () {
+            Route::get('/', [CustomFieldDefinitionController::class, 'index'])->name('laravel-auto-crud.custom-fields.index');
+            Route::post('/', [CustomFieldDefinitionController::class, 'store'])->name('laravel-auto-crud.custom-fields.store');
+            Route::put('/{id}', [CustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.custom-fields.update');
+            Route::delete('/{id}', [CustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.custom-fields.destroy');
+            Route::post('/reorder', [CustomFieldDefinitionController::class, 'reorder'])->name('laravel-auto-crud.custom-fields.reorder');
+        });
+        Route::get('/custom-fields-types', [CustomFieldDefinitionController::class, 'getAvailableTypes'])->name('laravel-auto-crud.custom-fields.types');
     });
 });
