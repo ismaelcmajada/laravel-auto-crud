@@ -960,7 +960,6 @@ watch(item, (value) => {
               :items="booleanFilterOptions"
               class="px-1"
               variant="underlined"
-              density="compact"
               clearable
             ></v-select>
             <!-- Filtro texto normal -->
