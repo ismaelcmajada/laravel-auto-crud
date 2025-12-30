@@ -1,7 +1,7 @@
 <script setup>
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, nextTick } from "vue"
 import AutoExternalRelation from "./AutoExternalRelation.vue"
 import AutocompleteServer from "./AutocompleteServer.vue"
 import { formatDate, formatDateTime } from "../../Utils/LaravelAutoCrud/dates"
@@ -97,7 +97,7 @@ const mapComboboxItems = (field, items) => {
 const form = ref(false)
 
 const formData = useForm(
-  Object.fromEntries(filteredFormFields.value.map(({ field }) => [field, null]))
+  Object.fromEntries(filteredFormFields.value.map((f) => [f.field, null]))
 )
 
 const initFields = () => {
@@ -110,10 +110,11 @@ const initFields = () => {
     filteredFormFields.value.forEach((field) => {
       if (field.type === "password") {
         formData[field.field] = ""
-        field.rules.required = false
+        if (field.rules) field.rules.required = false
       } else if (field.type === "boolean") {
         // Convertir a booleano real (puede venir como 1, 0, "1", "0", true, false)
-        formData[field.field] = Boolean(Number(item.value[field.field]))
+        const val = item.value[field.field]
+        formData[field.field] = val === true || val === 1 || val === "1"
       } else if (field.type === "date") {
         if (item.value[field.field]) {
           formData[field.field] = formatDate(item.value[field.field])
@@ -192,8 +193,12 @@ const initFields = () => {
       storeExternalShortcutShows.value[relation.relation] = false
     }
   })
-  formData.defaults()
-  emit("isDirty", false)
+
+  // Esperar al siguiente tick para que Vue procese los cambios antes de resetear defaults
+  nextTick(() => {
+    formData.defaults()
+    emit("isDirty", false)
+  })
 }
 
 const submit = () => {
