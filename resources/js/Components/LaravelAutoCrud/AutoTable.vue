@@ -336,7 +336,7 @@ const closeImageDialog = () => {
 
 // Opciones para filtro booleano tri-estado
 const booleanFilterOptions = [
-  { title: "Todos", value: "" },
+  { title: "Todos", value: null },
   { title: "Sí", value: "true" },
   { title: "No", value: "false" },
 ]

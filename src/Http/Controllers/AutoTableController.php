@@ -520,8 +520,17 @@ class AutoTableController extends Controller
             $subQuery->select('model_id')
                 ->from('custom_field_values')
                 ->where('custom_field_definition_id', $definition->id)
-                ->where('model_type', $modelType)
-                ->where('value', 'LIKE', '%' . $value . '%');
+                ->where('model_type', $modelType);
+            
+            // Si es un campo booleano, usar comparación exacta
+            if ($definition->type === 'boolean') {
+                $boolValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                if ($boolValue !== null) {
+                    $subQuery->where('value', '=', $boolValue ? '1' : '0');
+                }
+            } else {
+                $subQuery->where('value', 'LIKE', '%' . $value . '%');
+            }
         });
     }
 
