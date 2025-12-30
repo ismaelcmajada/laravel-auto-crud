@@ -256,6 +256,11 @@ class AutoCrudController extends Controller
             }
         }
 
+        // Eliminar custom field values solo cuando se elimina permanentemente
+        if ($instance::hasCustomFieldsEnabled()) {
+            $instance->customFieldValues()->delete();
+        }
+
         if ($instance->forceDelete()) {
 
             $this->setRecord($model, $instance->id, 'destroyPermanent');

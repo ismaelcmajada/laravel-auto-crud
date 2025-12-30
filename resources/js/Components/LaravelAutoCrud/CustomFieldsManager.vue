@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { useForm, router } from "@inertiajs/vue3"
+import DestroyDialog from "./DestroyDialog.vue"
 
 const props = defineProps({
   modelName: {
@@ -25,6 +26,11 @@ const loading = ref(false)
 const dialog = ref(false)
 const editingField = ref(null)
 
+// Diálogos de confirmación
+const showConfirmCloseDialog = ref(false)
+const showDestroyDialog = ref(false)
+const fieldToDelete = ref(null)
+
 const defaultField = {
   label: "",
   type: "string",
@@ -36,6 +42,9 @@ const defaultField = {
 
 const formData = useForm({ ...defaultField })
 const optionsInput = ref("")
+
+// Detectar si el formulario tiene cambios
+const isFormDirty = computed(() => formData.isDirty)
 
 const loadCustomFields = async () => {
   loading.value = true
@@ -66,7 +75,16 @@ const openDialog = (field = null) => {
     formData.reset()
     optionsInput.value = ""
   }
+  formData.defaults()
   dialog.value = true
+}
+
+const handleCloseDialog = () => {
+  if (isFormDirty.value) {
+    showConfirmCloseDialog.value = true
+  } else {
+    closeDialog()
+  }
 }
 
 const closeDialog = () => {
@@ -74,6 +92,11 @@ const closeDialog = () => {
   editingField.value = null
   formData.reset()
   optionsInput.value = ""
+}
+
+const confirmCloseDialog = () => {
+  showConfirmCloseDialog.value = false
+  closeDialog()
 }
 
 const saveField = () => {
@@ -89,35 +112,42 @@ const saveField = () => {
     preserveScroll: true,
     onSuccess: () => {
       loadCustomFields()
-      formData.reset()
+      // Resetear form pero mantener diálogo abierto para ver mensaje
       editingField.value = null
+      formData.reset()
+      formData.defaults()
       optionsInput.value = ""
       emit("updated")
     },
   })
 }
 
-const deleteField = (field) => {
-  if (!confirm(`¿Eliminar el campo "${field.label}"?`)) return
-
-  router.post(
-    `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}/destroy`,
-    {},
-    {
-      preserveScroll: true,
-      onSuccess: () => {
-        loadCustomFields()
-        emit("updated")
-      },
-    }
-  )
+const openDestroyDialog = (field) => {
+  fieldToDelete.value = field
+  showDestroyDialog.value = true
 }
+
+const closeDestroyDialog = () => {
+  showDestroyDialog.value = false
+  fieldToDelete.value = null
+}
+
+const onFieldDeleted = () => {
+  loadCustomFields()
+  emit("updated")
+}
+
+// Endpoint para el DestroyDialog
+const customFieldsEndpoint = computed(
+  () => `/laravel-auto-crud/custom-fields/${props.modelName}`
+)
 
 const toggleActive = (field) => {
   router.post(
     `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}`,
     { is_active: !field.is_active },
     {
+      preserveScroll: true,
       onSuccess: () => {
         loadCustomFields()
         emit("updated")
@@ -197,7 +227,7 @@ onMounted(() => {
               size="small"
               variant="text"
               color="error"
-              @click="deleteField(field)"
+              @click="openDestroyDialog(field)"
             >
               <v-icon>mdi-delete</v-icon>
               <v-tooltip activator="parent">Eliminar</v-tooltip>
@@ -213,10 +243,21 @@ onMounted(() => {
   </v-card>
 
   <!-- Dialog para crear/editar campo -->
-  <v-dialog v-model="dialog" max-width="500">
+  <v-dialog
+    v-model="dialog"
+    max-width="500"
+    :persistent="isFormDirty"
+    @click:outside="handleCloseDialog"
+  >
     <v-card>
-      <v-card-title>
-        {{ editingField ? "Editar Campo" : "Nuevo Campo Personalizado" }}
+      <v-card-title class="d-flex align-center">
+        <span>{{
+          editingField ? "Editar Campo" : "Nuevo Campo Personalizado"
+        }}</span>
+        <v-spacer></v-spacer>
+        <v-chip v-if="isFormDirty" color="warning" size="small">
+          Sin guardar
+        </v-chip>
       </v-card-title>
 
       <v-card-text>
@@ -260,16 +301,52 @@ onMounted(() => {
 
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn variant="text" @click="closeDialog">Cancelar</v-btn>
+        <v-btn color="red-darken-1" variant="text" @click="handleCloseDialog">
+          Cerrar
+        </v-btn>
         <v-btn
           color="primary"
           variant="flat"
           @click="saveField"
-          :loading="loading"
+          :loading="formData.processing"
         >
           Guardar
         </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Diálogo de confirmación para cerrar sin guardar -->
+  <v-dialog v-model="showConfirmCloseDialog" max-width="400">
+    <v-card>
+      <v-card-title class="text-h6">Cambios sin guardar</v-card-title>
+      <v-card-text>
+        Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar el
+        formulario? Los cambios se perderán.
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="grey"
+          variant="text"
+          @click="showConfirmCloseDialog = false"
+        >
+          Cancelar
+        </v-btn>
+        <v-btn color="red-darken-1" variant="text" @click="confirmCloseDialog">
+          Cerrar sin guardar
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Diálogo de confirmación para eliminar -->
+  <destroy-dialog
+    :show="showDestroyDialog"
+    :item="fieldToDelete || {}"
+    :end-point="customFieldsEndpoint"
+    element-name="label"
+    @close-dialog="closeDestroyDialog"
+    @reload-items="onFieldDeleted"
+  />
 </template>
