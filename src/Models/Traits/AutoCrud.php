@@ -309,7 +309,7 @@ trait AutoCrud
                     $headers[] = [
                         'title' => $definition->label,
                         'key' => 'custom_' . $definition->name,
-                        'sortable' => false,
+                        'sortable' => true,
                         'align' => 'center',
                         'type' => $definition->type,
                         'isCustomField' => true,

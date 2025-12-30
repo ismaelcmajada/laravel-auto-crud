@@ -86,9 +86,12 @@ const saveField = () => {
     : `/laravel-auto-crud/custom-fields/${props.modelName}`
 
   formData.post(url, {
+    preserveScroll: true,
     onSuccess: () => {
       loadCustomFields()
-      closeDialog()
+      formData.reset()
+      editingField.value = null
+      optionsInput.value = ""
       emit("updated")
     },
   })
@@ -101,6 +104,7 @@ const deleteField = (field) => {
     `/laravel-auto-crud/custom-fields/${props.modelName}/${field.id}/destroy`,
     {},
     {
+      preserveScroll: true,
       onSuccess: () => {
         loadCustomFields()
         emit("updated")

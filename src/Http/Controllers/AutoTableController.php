@@ -5,6 +5,7 @@ namespace Ismaelcmajada\LaravelAutoCrud\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
+use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldDefinition;
 
 
 class AutoTableController extends Controller
@@ -54,6 +55,12 @@ class AutoTableController extends Controller
             foreach ($search as $key => $value) {
                 if (!empty($value)) {
 
+                    // 0) Check si es un custom field (empieza con custom_)
+                    if (str_starts_with($key, 'custom_')) {
+                        $this->applyCustomFieldSearch($query, $modelInstance, $key, $value);
+                        continue;
+                    }
+
                     // 1) Check si en el modelo hay "scopeSearchXxx"
                     $scopeMethod = 'search' . Str::studly($key);
                     if (method_exists($modelInstance, 'scope' . $scopeMethod)) {
@@ -95,6 +102,12 @@ class AutoTableController extends Controller
                 if (isset($sort['key']) && isset($sort['order'])) {
                     $key = $sort['key'];
                     $order = $sort['order'];
+
+                    // 0) Check si es un custom field (empieza con custom_)
+                    if (str_starts_with($key, 'custom_')) {
+                        $this->applyCustomFieldOrder($query, $modelInstance, $mainTable, $key, $order);
+                        continue;
+                    }
 
                     // 1) Primero comprobamos si hay un scope de orden custom en el modelo
                     $scopeMethod = 'order' . Str::studly($key);
@@ -475,5 +488,58 @@ class AutoTableController extends Controller
 
         // Si no se encuentra el campo, devolver null
         return null;
+    }
+
+    private function applyCustomFieldSearch($query, $modelInstance, $key, $value)
+    {
+        // Obtener el nombre del campo sin el prefijo "custom_"
+        $fieldName = substr($key, 7); // Remove "custom_" prefix
+        $modelType = get_class($modelInstance);
+
+        // Buscar la definición del custom field
+        $definition = CustomFieldDefinition::where('model_type', $modelType)
+            ->where('name', $fieldName)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$definition) {
+            return;
+        }
+
+        // Buscar en custom_field_values usando whereHas con una subquery
+        $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $value, $modelType) {
+            $subQuery->select('model_id')
+                ->from('custom_field_values')
+                ->where('custom_field_definition_id', $definition->id)
+                ->where('model_type', $modelType)
+                ->where('value', 'LIKE', '%' . $value . '%');
+        });
+    }
+
+    private function applyCustomFieldOrder($query, $modelInstance, $mainTable, $key, $order)
+    {
+        // Obtener el nombre del campo sin el prefijo "custom_"
+        $fieldName = substr($key, 7); // Remove "custom_" prefix
+        $modelType = get_class($modelInstance);
+
+        // Buscar la definición del custom field
+        $definition = CustomFieldDefinition::where('model_type', $modelType)
+            ->where('name', $fieldName)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$definition) {
+            return;
+        }
+
+        // Hacer un LEFT JOIN con custom_field_values para ordenar
+        $query->leftJoin('custom_field_values as cfv_' . $definition->id, function ($join) use ($definition, $modelType, $mainTable) {
+            $join->on('cfv_' . $definition->id . '.model_id', '=', $mainTable . '.id')
+                ->where('cfv_' . $definition->id . '.model_type', '=', $modelType)
+                ->where('cfv_' . $definition->id . '.custom_field_definition_id', '=', $definition->id);
+        });
+
+        // Ordenar por el valor del custom field
+        $query->orderBy('cfv_' . $definition->id . '.value', $order);
     }
 }
