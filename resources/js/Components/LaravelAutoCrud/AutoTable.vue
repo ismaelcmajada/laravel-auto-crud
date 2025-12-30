@@ -127,10 +127,17 @@ const {
 
 const finalHeaders = computed(() => {
   // Usar itemHeaders del composable si tiene datos, sino usar los del modelo
-  const originalHeaders =
+  let originalHeaders =
     itemHeaders.value.length > 0
       ? [...itemHeaders.value]
       : [...model.value.tableHeaders]
+
+  // En listMode, filtrar columnas que fueron excluidas en props.model.tableHeaders
+  // (por ejemplo, el FK en relaciones hasMany)
+  if (props.listMode && props.model?.tableHeaders) {
+    const allowedKeys = props.model.tableHeaders.map((h) => h.key)
+    originalHeaders = originalHeaders.filter((h) => allowedKeys.includes(h.key))
+  }
 
   // Asegurar que customHeaders es array
   const extraHeaders = Array.isArray(props.customHeaders)
