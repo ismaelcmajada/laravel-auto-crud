@@ -64,6 +64,9 @@ class AutoCrudController extends Controller
             }
         }
 
+        // Excluir custom fields del modelo principal (se guardan aparte)
+        $validatedData = array_filter($validatedData, fn($value, $key) => !str_starts_with($key, 'custom_'), ARRAY_FILTER_USE_BOTH);
+
         $instance = $modelInstance::create($validatedData);
 
         // Manejo de archivos
@@ -200,6 +203,9 @@ class AutoCrudController extends Controller
                 unset($validatedData[$field['field']]);
             }
         }
+
+        // Excluir custom fields del modelo principal (se guardan aparte)
+        $validatedData = array_filter($validatedData, fn($value, $key) => !str_starts_with($key, 'custom_'), ARRAY_FILTER_USE_BOTH);
 
         $updated = $instance->update($validatedData);
 
