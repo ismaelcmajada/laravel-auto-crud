@@ -46,8 +46,46 @@ const model = computed(() => {
   return props.model
 })
 
+// Modelo dinámico actualizado desde el servidor (incluye formFields y tableHeaders)
+const dynamicModel = computed(() => {
+  // Si hay modelo del servidor, usarlo; sino usar el de props
+  return serverModel.value || props.model
+})
+
+const forbiddenActions =
+  model.value.forbiddenActions[page.props.auth.user.role] ?? []
+
+// Mapa de externalRelations por su key (relation name) para renderizar en tabla
+const externalRelationsMap = computed(() => {
+  const map = {}
+  if (model.value.externalRelations) {
+    model.value.externalRelations.forEach((rel) => {
+      if (rel.table) {
+        map[rel.relation] = rel
+      }
+    })
+  }
+  return map
+})
+
+const {
+  endPoint,
+  loading,
+  itemsPerPageOptions,
+  updateItems,
+  tableData,
+  loadItems,
+  resetTable,
+  itemHeaders,
+  dynamicModel: serverModel,
+} = useTableServer()
+
 const finalHeaders = computed(() => {
-  const originalHeaders = [...model.value.tableHeaders]
+  // Usar itemHeaders del composable si tiene datos, sino usar los del modelo
+  const originalHeaders =
+    itemHeaders.value.length > 0
+      ? [...itemHeaders.value]
+      : [...model.value.tableHeaders]
 
   // Asegurar que customHeaders es array
   const extraHeaders = Array.isArray(props.customHeaders)
@@ -136,32 +174,6 @@ const finalHeaders = computed(() => {
 
   return result
 })
-
-const forbiddenActions =
-  model.value.forbiddenActions[page.props.auth.user.role] ?? []
-
-// Mapa de externalRelations por su key (relation name) para renderizar en tabla
-const externalRelationsMap = computed(() => {
-  const map = {}
-  if (model.value.externalRelations) {
-    model.value.externalRelations.forEach((rel) => {
-      if (rel.table) {
-        map[rel.relation] = rel
-      }
-    })
-  }
-  return map
-})
-
-const {
-  endPoint,
-  loading,
-  itemsPerPageOptions,
-  updateItems,
-  tableData,
-  loadItems,
-  resetTable,
-} = useTableServer()
 
 tableData.search = props.search ?? {}
 tableData.exactFilters = props.exactFilters ?? {}
@@ -295,7 +307,7 @@ watch(item, (value) => {
     :filteredItems="props.filteredItems"
     :customFilters="props.customFilters"
     :customItemProps="props.customItemProps"
-    :model="model"
+    :model="dynamicModel"
   >
     <auto-form-dialog
       v-model:show="showFormDialog"
@@ -304,13 +316,13 @@ watch(item, (value) => {
       :filteredItems="props.filteredItems"
       :customFilters="props.customFilters"
       :customItemProps="props.customItemProps"
-      :model="model"
+      :model="dynamicModel"
       @formChange="emit('formChange', $event)"
     >
       <template #prepend>
         <slot
           name="auto-form-dialog.prepend"
-          :model="model"
+          :model="dynamicModel"
           :type="formDialogType"
           :item="item"
           :show="showFormDialog"
@@ -319,12 +331,12 @@ watch(item, (value) => {
       <template #auto-form="{ handleIsFormDirty }">
         <slot
           name="auto-form-dialog.auto-form"
-          :model="model"
+          :model="dynamicModel"
           :type="formDialogType"
           :item="item"
         >
           <auto-form
-            :model="model"
+            :model="dynamicModel"
             v-model:type="formDialogType"
             v-model:item="item"
             :customFilters="props.customFilters"
@@ -385,7 +397,7 @@ watch(item, (value) => {
       <template #append>
         <slot
           name="auto-form-dialog.append"
-          :model="model"
+          :model="dynamicModel"
           :type="formDialogType"
           :item="item"
           :show="showFormDialog"

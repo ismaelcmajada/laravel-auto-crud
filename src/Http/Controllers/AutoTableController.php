@@ -167,7 +167,7 @@ class AutoTableController extends Controller
                 'search' => $search,
                 'deleted' => $deleted,
             ],
-            'tableHeaders' => $modelInstance::getTableHeaders(),
+            'model' => $modelInstance::getModel(),
         ];
     }
 

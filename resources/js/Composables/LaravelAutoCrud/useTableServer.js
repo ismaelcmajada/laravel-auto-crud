@@ -29,6 +29,7 @@ export default function useTableServer() {
   )
   const selectedHeaders = ref([])
   const itemHeaders = ref([])
+  const dynamicModel = ref(null)
   const allHeaders = computed(
     () => selectedHeaders.value.length == itemHeaders.value.length
   )
@@ -68,18 +69,22 @@ export default function useTableServer() {
       .then((response) => {
         tableData.items = response.data.tableData.items
         tableData.itemsLength = response.data.tableData.itemsLength
-        // Actualizar headers si vienen en la respuesta
-        if (response.data.tableHeaders) {
-          itemHeaders.value = response.data.tableHeaders
-          // Actualizar selectedHeaders para incluir nuevos headers
-          const currentKeys = selectedHeaders.value
-          const newKeys = response.data.tableHeaders.map((h) => h.key)
-          selectedHeaders.value = newKeys.filter(
-            (k) => currentKeys.includes(k) || !currentKeys.length
-          )
-          // Si no hay ninguno seleccionado, seleccionar todos
-          if (selectedHeaders.value.length === 0) {
-            selectedHeaders.value = newKeys
+        // Actualizar modelo completo si viene en la respuesta
+        if (response.data.model) {
+          dynamicModel.value = response.data.model
+          // Actualizar headers desde el modelo
+          if (response.data.model.tableHeaders) {
+            itemHeaders.value = response.data.model.tableHeaders
+            // Actualizar selectedHeaders para incluir nuevos headers
+            const currentKeys = selectedHeaders.value
+            const newKeys = response.data.model.tableHeaders.map((h) => h.key)
+            selectedHeaders.value = newKeys.filter(
+              (k) => currentKeys.includes(k) || !currentKeys.length
+            )
+            // Si no hay ninguno seleccionado, seleccionar todos
+            if (selectedHeaders.value.length === 0) {
+              selectedHeaders.value = newKeys
+            }
           }
         }
         loading.value = false
@@ -112,6 +117,7 @@ export default function useTableServer() {
     selectedHeaders,
     allHeaders,
     itemHeaders,
+    dynamicModel,
     endPoint,
     loading,
     updateItems,
