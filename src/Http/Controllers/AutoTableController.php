@@ -133,9 +133,20 @@ class AutoTableController extends Controller
 
         $items = $query->paginate($itemsPerPage);
 
+        // Agregar custom fields a cada item si están habilitados
+        $itemsArray = $items->items();
+        if ($modelInstance::hasCustomFieldsEnabled()) {
+            foreach ($itemsArray as $item) {
+                $customValues = $item->getCustomFieldsValues();
+                foreach ($customValues as $key => $value) {
+                    $item->setAttribute($key, $value);
+                }
+            }
+        }
+
         return [
             'tableData' => [
-                'items' => $items->items(),
+                'items' => $itemsArray,
                 'itemsLength' => $items->total(),
                 'itemsPerPage' => $items->perPage(),
                 'page' => $items->currentPage(),

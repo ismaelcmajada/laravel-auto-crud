@@ -33,7 +33,7 @@ class CustomFieldValue extends Model
 
         return match ($this->definition->type) {
             'number' => is_numeric($this->value) ? (float) $this->value : null,
-            'boolean' => filter_var($this->value, FILTER_VALIDATE_BOOLEAN),
+            'boolean' => $this->value === '1' || $this->value === 1 || $this->value === true,
             'date', 'datetime' => $this->value,
             default => $this->value,
         };

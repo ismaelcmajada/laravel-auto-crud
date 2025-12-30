@@ -301,6 +301,23 @@ trait AutoCrud
             }
         }
 
+        // Agregar custom fields que tienen show_in_table = true
+        if (static::hasCustomFieldsEnabled()) {
+            $customFieldDefinitions = static::getCustomFieldDefinitions();
+            foreach ($customFieldDefinitions as $definition) {
+                if ($definition->show_in_table) {
+                    $headers[] = [
+                        'title' => $definition->label,
+                        'key' => 'custom_' . $definition->name,
+                        'sortable' => false,
+                        'align' => 'center',
+                        'type' => $definition->type,
+                        'isCustomField' => true,
+                    ];
+                }
+            }
+        }
+
         $headers[] = [
             'title' => 'Acciones',
             'key' => 'actions',
