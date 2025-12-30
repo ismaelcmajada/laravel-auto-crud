@@ -11,9 +11,6 @@ use App\Models\Record;
 
 trait AutoCrud
 {
-    protected static bool $customFieldsEnabled = false;
-
-
     protected $fillable = [];
     protected $casts = [];
     protected $hidden = [];
@@ -423,12 +420,12 @@ trait AutoCrud
 
     public static function hasCustomFieldsEnabled(): bool
     {
-        return static::$customFieldsEnabled;
+        return property_exists(static::class, 'customFieldsEnabled') && static::$customFieldsEnabled === true;
     }
 
     public static function getCustomFieldDefinitions()
     {
-        if (!static::$customFieldsEnabled) {
+        if (!static::hasCustomFieldsEnabled()) {
             return collect();
         }
 
@@ -437,7 +434,7 @@ trait AutoCrud
 
     public static function getCustomFieldsAsFormFields(): array
     {
-        if (!static::$customFieldsEnabled) {
+        if (!static::hasCustomFieldsEnabled()) {
             return [];
         }
 
@@ -453,7 +450,7 @@ trait AutoCrud
 
     public function getCustomFieldsValues(): array
     {
-        if (!static::$customFieldsEnabled || !$this->exists) {
+        if (!static::hasCustomFieldsEnabled() || !$this->exists) {
             return [];
         }
 
@@ -462,7 +459,7 @@ trait AutoCrud
 
     public function saveCustomFields(array $data): void
     {
-        if (!static::$customFieldsEnabled) {
+        if (!static::hasCustomFieldsEnabled()) {
             return;
         }
 
