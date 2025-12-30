@@ -22,6 +22,16 @@ Route::middleware('web')->group(function () {
 
         Route::post('/session/setSession', [SessionController::class, 'setSession'])->name('laravel-auto-crud.session.setSession');
 
+        // Custom Fields Management Routes - MUST be before {model} routes
+        Route::get('/custom-fields-types', [CustomFieldDefinitionController::class, 'getAvailableTypes'])->name('laravel-auto-crud.custom-fields.types');
+        Route::prefix('custom-fields/{model}')->group(function () {
+            Route::get('/', [CustomFieldDefinitionController::class, 'index'])->name('laravel-auto-crud.custom-fields.index');
+            Route::post('/', [CustomFieldDefinitionController::class, 'store'])->name('laravel-auto-crud.custom-fields.store');
+            Route::put('/{id}', [CustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.custom-fields.update');
+            Route::delete('/{id}', [CustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.custom-fields.destroy');
+            Route::post('/reorder', [CustomFieldDefinitionController::class, 'reorder'])->name('laravel-auto-crud.custom-fields.reorder');
+        });
+
         Route::post('/{model}/load-calendar-events', [CalendarController::class, 'loadEvents'])->name('laravel-auto-crud.model.load-calendar-events');
         Route::post('/{model}/load-autocomplete-items', [AutoCompleteController::class, 'loadAutocompleteItems'])->name('laravel-auto-crud.model.load-autocomplete-items');
         Route::post('/{model}/load-items', [AutoTableController::class, 'loadItems'])->name('laravel-auto-crud.model.load-items');
@@ -40,15 +50,5 @@ Route::middleware('web')->group(function () {
         Route::post('/{model}/{id}/pivot/{externalRelation}/{item}', [AutoCrudController::class, 'updatePivot'])->name('laravel-auto-crud.model.updatePivot');
         Route::post('/{model}/{id}/bind/{externalRelation}/{item}', [AutoCrudController::class, 'bind'])->name('laravel-auto-crud.model.bind');
         Route::post('/{model}/{id}/unbind/{externalRelation}/{item}', [AutoCrudController::class, 'unbind'])->name('laravel-auto-crud.model.unbind');
-
-        // Custom Fields Management Routes
-        Route::prefix('custom-fields/{model}')->group(function () {
-            Route::get('/', [CustomFieldDefinitionController::class, 'index'])->name('laravel-auto-crud.custom-fields.index');
-            Route::post('/', [CustomFieldDefinitionController::class, 'store'])->name('laravel-auto-crud.custom-fields.store');
-            Route::put('/{id}', [CustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.custom-fields.update');
-            Route::delete('/{id}', [CustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.custom-fields.destroy');
-            Route::post('/reorder', [CustomFieldDefinitionController::class, 'reorder'])->name('laravel-auto-crud.custom-fields.reorder');
-        });
-        Route::get('/custom-fields-types', [CustomFieldDefinitionController::class, 'getAvailableTypes'])->name('laravel-auto-crud.custom-fields.types');
     });
 });
