@@ -151,12 +151,19 @@ abstract class BaseFormRequest extends FormRequest
                 break;
             case 'file':
                 if (isset($field['multiple']) && $field['multiple']) {
-                    // Múltiples archivos
-                    $fieldRules[] = 'array';
+                    // Múltiples archivos - validación condicional
                     $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
-                        if (!is_array($value)) {
+                        // Si no hay valor o es null, permitir (los archivos existentes se mantienen)
+                        if ($value === null || $value === '') {
                             return;
                         }
+                        
+                        // Si no es array, fallar
+                        if (!is_array($value)) {
+                            $fail("El campo {$attribute} debe ser un conjunto de archivos.");
+                            return;
+                        }
+                        
                         foreach ($value as $index => $file) {
                             if (!is_file($file) && !is_object($file)) {
                                 continue;

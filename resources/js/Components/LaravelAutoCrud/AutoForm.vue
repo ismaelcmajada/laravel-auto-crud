@@ -126,17 +126,22 @@ const initFields = () => {
             item.value[field.field]
           }`
         }
-        if (field.type === "file" && item.value[field.field]) {
+        if (field.type === "file") {
           if (field.multiple) {
-            // Múltiples archivos - parsear JSON
-            try {
-              filePreview.value[field.field] = JSON.parse(
-                item.value[field.field]
-              )
-            } catch (e) {
+            // Múltiples archivos - limpiar archivos pendientes y parsear JSON existente
+            formData[field.field] = null
+            if (item.value[field.field]) {
+              try {
+                filePreview.value[field.field] = JSON.parse(
+                  item.value[field.field]
+                )
+              } catch (e) {
+                filePreview.value[field.field] = []
+              }
+            } else {
               filePreview.value[field.field] = []
             }
-          } else {
+          } else if (item.value[field.field]) {
             filePreview.value[field.field] = item.value[field.field]
           }
         }
@@ -191,6 +196,8 @@ const submit = () => {
       onSuccess: (page) => {
         item.value = page.props.flash.data
         filesToDelete.value = {}
+        // Limpiar transform para evitar re-envío de archivos y flags
+        formData.transform((data) => data)
         initFields()
         emit("success", page.props.flash)
       },
@@ -200,6 +207,8 @@ const submit = () => {
       onSuccess: (page) => {
         item.value = page.props.flash.data
         filesToDelete.value = {}
+        // Limpiar transform para evitar re-envío de archivos y flags
+        formData.transform((data) => data)
         initFields()
         emit("success", page.props.flash)
         if (model.value.externalRelations.length > 0) {
