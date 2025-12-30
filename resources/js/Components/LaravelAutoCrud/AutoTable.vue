@@ -334,6 +334,18 @@ const closeImageDialog = () => {
   showImageDialog.value = false
 }
 
+// Opciones para filtro booleano tri-estado
+const booleanFilterOptions = [
+  { title: "Todos", value: "" },
+  { title: "Sí", value: "true" },
+  { title: "No", value: "false" },
+]
+
+// Helper para verificar si un header es booleano
+const isBooleanHeader = (header) => {
+  return header.type === "boolean"
+}
+
 if (props.itemsPerPageOptions)
   itemsPerPageOptions.value = props.itemsPerPageOptions
 
@@ -610,7 +622,21 @@ watch(item, (value) => {
         )"
         :key="header.key"
       >
+        <!-- Filtro booleano tri-estado -->
+        <v-select
+          v-if="isBooleanHeader(header)"
+          v-model="tableData.search[header.key]"
+          @update:model-value="loadItems"
+          :items="booleanFilterOptions"
+          :label="header.title"
+          variant="underlined"
+          density="compact"
+          hide-details
+          clearable
+        ></v-select>
+        <!-- Filtro texto normal -->
         <v-text-field
+          v-else
           v-model="tableData.search[header.key]"
           @input="updateItems"
           :label="header.title"
@@ -700,6 +726,18 @@ watch(item, (value) => {
                 >
                   <v-icon>mdi-download</v-icon>
                 </v-btn>
+              </template>
+              <!-- Si el header tiene type boolean -->
+              <template v-else-if="header.type === 'boolean'">
+                <v-icon
+                  :color="listItem[header.key] ? 'success' : 'grey-lighten-1'"
+                >
+                  {{
+                    listItem[header.key]
+                      ? "mdi-check-circle"
+                      : "mdi-close-circle"
+                  }}
+                </v-icon>
               </template>
               <!-- Valor normal -->
               <template v-else>
@@ -914,8 +952,20 @@ watch(item, (value) => {
             )"
             :key="header.key"
           >
+            <!-- Filtro booleano tri-estado -->
+            <v-select
+              v-if="isBooleanHeader(header)"
+              v-model="tableData.search[header.key]"
+              @update:model-value="loadItems"
+              :items="booleanFilterOptions"
+              class="px-1"
+              variant="underlined"
+              density="compact"
+              clearable
+            ></v-select>
+            <!-- Filtro texto normal -->
             <v-text-field
-              v-if="header.key"
+              v-else-if="header.key"
               v-model="tableData.search[header.key]"
               @input="updateItems"
               type="text"
@@ -1021,6 +1071,13 @@ watch(item, (value) => {
                   <v-tooltip activator="parent">Descargar</v-tooltip>
                 </v-btn>
               </template>
+            </template>
+
+            <!-- Si el header tiene type boolean -->
+            <template v-else-if="header.type === 'boolean'">
+              <v-icon :color="item[header.key] ? 'success' : 'grey-lighten-1'">
+                {{ item[header.key] ? "mdi-check-circle" : "mdi-close-circle" }}
+              </v-icon>
             </template>
 
             <!-- Si no, usamos el valor normal -->

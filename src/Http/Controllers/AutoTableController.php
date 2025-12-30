@@ -74,8 +74,15 @@ class AutoTableController extends Controller
                     $fieldSearchInfo = $this->getFieldSearchInfo($modelInstance, $key);
 
                     if ($fieldSearchInfo !== null) {
+                        // Si es un campo booleano, aplicar filtro exacto
+                        if (isset($fieldSearchInfo['type']) && $fieldSearchInfo['type'] === 'boolean') {
+                            $boolValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                            if ($boolValue !== null) {
+                                $query->where($mainTable . '.' . $key, '=', $boolValue ? 1 : 0);
+                            }
+                        }
                         // Si es una externalRelation (belongsToMany/hasMany con table:true)
-                        if (isset($fieldSearchInfo['externalRelation'])) {
+                        elseif (isset($fieldSearchInfo['externalRelation'])) {
                             $this->applyExternalRelationSearch(
                                 $query,
                                 $fieldSearchInfo['externalRelation'],
@@ -455,6 +462,7 @@ class AutoTableController extends Controller
                 return [
                     'relationInfo' => $relationInfo,
                     'searchKey' => $searchKey,
+                    'type' => $field['type'] ?? null,
                 ];
             }
         }
