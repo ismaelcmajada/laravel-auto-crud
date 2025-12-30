@@ -251,8 +251,8 @@ const customFieldsEnabled = computed(() => {
 })
 
 const onCustomFieldsUpdated = () => {
-  // Recargar la página para obtener los nuevos campos
-  window.location.reload()
+  // Recargar los items de la tabla sin recargar toda la página
+  loadItems()
 }
 
 // Image dialog
