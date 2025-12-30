@@ -290,17 +290,6 @@ trait AutoCrud
             ];
         }, static::getTableFields());
 
-        foreach (static::getExternalRelations() as $externalRelation) {
-            if (isset($externalRelation['table']) && $externalRelation['table']) {
-                $headers[] = [
-                    'title' => $externalRelation['name'],
-                    'key' => $externalRelation['relation'],
-                    'sortable' => false,
-                    'align' => 'center',
-                ];
-            }
-        }
-
         // Agregar custom fields que tienen show_in_table = true
         if (static::hasCustomFieldsEnabled()) {
             $customFieldDefinitions = static::getCustomFieldDefinitions();
@@ -315,6 +304,17 @@ trait AutoCrud
                         'isCustomField' => true,
                     ];
                 }
+            }
+        }
+
+        foreach (static::getExternalRelations() as $externalRelation) {
+            if (isset($externalRelation['table']) && $externalRelation['table']) {
+                $headers[] = [
+                    'title' => $externalRelation['name'],
+                    'key' => $externalRelation['relation'],
+                    'sortable' => false,
+                    'align' => 'center',
+                ];
             }
         }
 
