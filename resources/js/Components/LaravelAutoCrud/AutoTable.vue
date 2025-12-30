@@ -251,7 +251,7 @@ const customFieldsEnabled = computed(() => {
 })
 
 const onCustomFieldsUpdated = () => {
-  // Recargar los items de la tabla sin recargar toda la página
+  // Recargar los items y headers de la tabla (el diálogo de lista permanece abierto)
   loadItems()
 }
 

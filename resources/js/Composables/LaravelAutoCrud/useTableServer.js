@@ -68,6 +68,20 @@ export default function useTableServer() {
       .then((response) => {
         tableData.items = response.data.tableData.items
         tableData.itemsLength = response.data.tableData.itemsLength
+        // Actualizar headers si vienen en la respuesta
+        if (response.data.tableHeaders) {
+          itemHeaders.value = response.data.tableHeaders
+          // Actualizar selectedHeaders para incluir nuevos headers
+          const currentKeys = selectedHeaders.value
+          const newKeys = response.data.tableHeaders.map((h) => h.key)
+          selectedHeaders.value = newKeys.filter(
+            (k) => currentKeys.includes(k) || !currentKeys.length
+          )
+          // Si no hay ninguno seleccionado, seleccionar todos
+          if (selectedHeaders.value.length === 0) {
+            selectedHeaders.value = newKeys
+          }
+        }
         loading.value = false
       })
   }

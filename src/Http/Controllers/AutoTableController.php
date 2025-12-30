@@ -166,7 +166,8 @@ class AutoTableController extends Controller
                 'sortBy' => $sortBy,
                 'search' => $search,
                 'deleted' => $deleted,
-            ]
+            ],
+            'tableHeaders' => $modelInstance::getTableHeaders(),
         ];
     }
 

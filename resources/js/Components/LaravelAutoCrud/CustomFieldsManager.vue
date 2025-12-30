@@ -112,7 +112,8 @@ const saveField = () => {
     preserveScroll: true,
     onSuccess: () => {
       loadCustomFields()
-      // Resetear form pero mantener diálogo abierto para ver mensaje
+      // Cerrar diálogo y resetear form
+      dialog.value = false
       editingField.value = null
       formData.reset()
       formData.defaults()
