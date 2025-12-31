@@ -42,22 +42,59 @@ trait AutoCrud
 
     public static function getIncludes()
     {
-        $totalIncludes = static::$includes;
-        $totalIncludes[] = 'records.user';
+        $simpleIncludes = [];
+        $withTrashedIncludes = [];
+        
+        // Includes estáticos definidos en el modelo
+        foreach (static::$includes as $include) {
+            $simpleIncludes[] = $include;
+        }
+        
+        // Siempre incluir records.user
+        $simpleIncludes[] = 'records.user';
 
+        // Relaciones de campos (belongsTo)
         foreach (static::getFields() as $field) {
-            if (isset($field['relation']) && !in_array($field['relation']['relation'], $totalIncludes)) {
-                $totalIncludes[] = $field['relation']['relation'];
+            if (isset($field['relation']) && !in_array($field['relation']['relation'], $simpleIncludes)) {
+                $relationName = $field['relation']['relation'];
+                $relatedModelClass = $field['relation']['model'];
+                
+                if (class_exists($relatedModelClass) && static::modelUsesSoftDeletes($relatedModelClass)) {
+                    $withTrashedIncludes[$relationName] = function ($query) {
+                        $query->withTrashed();
+                    };
+                } else {
+                    $simpleIncludes[] = $relationName;
+                }
             }
         }
 
+        // Relaciones externas (belongsToMany, hasMany)
         foreach (static::$externalRelations as $relation) {
-            if (!in_array($relation['relation'], $totalIncludes)) {
-                $totalIncludes[] = $relation['relation'];
+            $relationName = $relation['relation'];
+            if (!in_array($relationName, $simpleIncludes) && !isset($withTrashedIncludes[$relationName])) {
+                $relatedModelClass = $relation['model'];
+                
+                if (class_exists($relatedModelClass) && static::modelUsesSoftDeletes($relatedModelClass)) {
+                    $withTrashedIncludes[$relationName] = function ($query) {
+                        $query->withTrashed();
+                    };
+                } else {
+                    $simpleIncludes[] = $relationName;
+                }
             }
         }
 
-        return $totalIncludes;
+        // Combinar: los simples como strings, los withTrashed como closures
+        return array_merge($simpleIncludes, $withTrashedIncludes);
+    }
+    
+    protected static function modelUsesSoftDeletes($modelClass)
+    {
+        return in_array(
+            'Illuminate\Database\Eloquent\SoftDeletes',
+            class_uses_recursive($modelClass)
+        );
     }
 
     public static function getEndpoint($model = null)
@@ -219,7 +256,13 @@ trait AutoCrud
         $foreignKey = $relation['foreignKey'];
         $localKey = $relation['localKey'] ?? 'id';
 
-        return $this->hasMany($relatedModelClass, $foreignKey, $localKey);
+        $relationMethod = $this->hasMany($relatedModelClass, $foreignKey, $localKey);
+
+        if ($this->usesSoftDeletes($relatedModelClass)) {
+            $relationMethod = $relationMethod->withTrashed();
+        }
+
+        return $relationMethod;
     }
 
     protected function handleBelongsToManyRelation($relation, $relatedModelClass)
