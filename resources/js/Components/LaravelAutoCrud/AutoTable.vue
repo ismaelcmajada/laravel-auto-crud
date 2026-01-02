@@ -5,6 +5,7 @@ import DestroyDialog from "./DestroyDialog.vue"
 import RestoreDialog from "./RestoreDialog.vue"
 import DestroyPermanentDialog from "./DestroyPermanentDialog.vue"
 import LoadingOverlay from "./LoadingOverlay.vue"
+import ExpandableText from "./ExpandableText.vue"
 import useTableServer from "../../Composables/LaravelAutoCrud/useTableServer"
 import useDialogs from "../../Composables/LaravelAutoCrud/useDialogs"
 import HistoryDialog from "./HistoryDialog.vue"
@@ -739,6 +740,13 @@ watch(item, (value) => {
                   }}
                 </v-icon>
               </template>
+              <!-- Si el header tiene type text, usar ExpandableText -->
+              <template v-else-if="header.type === 'text'">
+                <expandable-text
+                  :text="getValueByNestedKey(listItem, header.key)"
+                  :length="header.truncateLength || 10"
+                />
+              </template>
               <!-- Valor normal -->
               <template v-else>
                 {{ getValueByNestedKey(listItem, header.key) }}
@@ -1076,6 +1084,14 @@ watch(item, (value) => {
               <v-icon :color="item[header.key] ? 'success' : 'grey-lighten-1'">
                 {{ item[header.key] ? "mdi-check-circle" : "mdi-close-circle" }}
               </v-icon>
+            </template>
+
+            <!-- Si el header tiene type text, usar ExpandableText -->
+            <template v-else-if="header.type === 'text'">
+              <expandable-text
+                :text="getValueByNestedKey(item, header.key)"
+                :length="header.truncateLength || 10"
+              />
             </template>
 
             <!-- Si no, usamos el valor normal -->

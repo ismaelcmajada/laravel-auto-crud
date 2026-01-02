@@ -78,7 +78,16 @@ class AutoTableController extends Controller
                         if (isset($fieldSearchInfo['type']) && $fieldSearchInfo['type'] === 'boolean') {
                             $boolValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                             if ($boolValue !== null) {
-                                $query->where($mainTable . '.' . $key, '=', $boolValue ? 1 : 0);
+                                if ($boolValue) {
+                                    // true: solo valores = 1
+                                    $query->where($mainTable . '.' . $key, '=', 1);
+                                } else {
+                                    // false: valores = 0 o NULL
+                                    $query->where(function ($q) use ($mainTable, $key) {
+                                        $q->where($mainTable . '.' . $key, '=', 0)
+                                          ->orWhereNull($mainTable . '.' . $key);
+                                    });
+                                }
                             }
                         }
                         // Si es una externalRelation (belongsToMany/hasMany con table:true)
@@ -515,23 +524,47 @@ class AutoTableController extends Controller
             return;
         }
 
-        // Buscar en custom_field_values usando whereHas con una subquery
-        $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $value, $modelType) {
-            $subQuery->select('model_id')
-                ->from('custom_field_values')
-                ->where('custom_field_definition_id', $definition->id)
-                ->where('model_type', $modelType);
-            
-            // Si es un campo booleano, usar comparación exacta
-            if ($definition->type === 'boolean') {
-                $boolValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-                if ($boolValue !== null) {
-                    $subQuery->where('value', '=', $boolValue ? '1' : '0');
+        // Si es un campo booleano, manejar null como false
+        if ($definition->type === 'boolean') {
+            $boolValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($boolValue !== null) {
+                if ($boolValue) {
+                    // true: solo registros con valor = '1'
+                    $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $modelType) {
+                        $subQuery->select('model_id')
+                            ->from('custom_field_values')
+                            ->where('custom_field_definition_id', $definition->id)
+                            ->where('model_type', $modelType)
+                            ->where('value', '=', '1');
+                    });
+                } else {
+                    // false: registros con valor = '0' O que no tienen valor (null)
+                    $query->where(function ($q) use ($modelInstance, $definition, $modelType) {
+                        $q->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $modelType) {
+                            $subQuery->select('model_id')
+                                ->from('custom_field_values')
+                                ->where('custom_field_definition_id', $definition->id)
+                                ->where('model_type', $modelType)
+                                ->where('value', '=', '0');
+                        })->orWhereNotIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $modelType) {
+                            $subQuery->select('model_id')
+                                ->from('custom_field_values')
+                                ->where('custom_field_definition_id', $definition->id)
+                                ->where('model_type', $modelType);
+                        });
+                    });
                 }
-            } else {
-                $subQuery->where('value', 'LIKE', '%' . $value . '%');
             }
-        });
+        } else {
+            // Campos no booleanos: búsqueda normal con LIKE
+            $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $value, $modelType) {
+                $subQuery->select('model_id')
+                    ->from('custom_field_values')
+                    ->where('custom_field_definition_id', $definition->id)
+                    ->where('model_type', $modelType)
+                    ->where('value', 'LIKE', '%' . $value . '%');
+            });
+        }
     }
 
     private function applyCustomFieldOrder($query, $modelInstance, $mainTable, $key, $order)
