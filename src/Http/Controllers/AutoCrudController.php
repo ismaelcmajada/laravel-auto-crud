@@ -94,7 +94,7 @@ class AutoCrudController extends Controller
                     $instance->{$field['field']} = json_encode($filePaths);
                 } else {
                     // Archivo único
-                    $filePath = $request->file($field['field'])->storeAs($storagePath,  $field['field'] . '/' . $instance['id']);
+                    $filePath = $request->file($field['field'])->storeAs($storagePath,  $field['field'] . '/' . $instance['id'] . '_' . time());
 
                     if (!$field['public'] && $field['type'] === 'file') {
                         $fileContent = Storage::get($filePath);
@@ -176,14 +176,17 @@ class AutoCrudController extends Controller
                 } else {
                     // Archivo único (comportamiento original)
                     if ($request->input($field['field'] . '_edited')) {
-                        Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
+                        // Eliminar archivo existente usando el path guardado en DB
+                        if ($instance->{$field['field']}) {
+                            Storage::delete($instance->{$field['field']});
+                        }
                         $validatedData[$field['field']] = null;
                     }
                     if ($request->hasFile($field['field'])) {
                         $storagePath = $field['public'] ? 'public/' : 'private/';
                         $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
                         $storagePath .= $model;
-                        $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id);
+                        $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id . '_' . time());
 
                         if (!$field['public'] && $field['type'] === 'file') {
                             $fileContent = Storage::get($filePath);
