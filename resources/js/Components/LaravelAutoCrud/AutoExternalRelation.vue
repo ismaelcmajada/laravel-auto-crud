@@ -97,7 +97,14 @@ const addItem = () => {
       {
         onSuccess: (page) => {
           item.value = page.props.flash.data
-          pivotData.value = {}
+          // Resetear pivotData manteniendo valores de campos con keepValueAfterAdd
+          const newPivotData = {}
+          props.externalRelation.pivotFields?.forEach((field) => {
+            if (field.keepValueAfterAdd) {
+              newPivotData[field.field] = pivotData.value[field.field]
+            }
+          })
+          pivotData.value = newPivotData
           selectedItem.value = null
           getItems()
           emit("bound")
