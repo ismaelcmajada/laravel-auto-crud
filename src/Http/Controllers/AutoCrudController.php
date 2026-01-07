@@ -58,8 +58,8 @@ class AutoCrudController extends Controller
             if ($field['type'] === 'select' && isset($field['multiple']) && $field['multiple']) {
                 $validatedData[$field['field']] = implode(', ', $validatedData[$field['field']]);
             }
-            // Excluir campos de archivos múltiples del create (se manejan después)
-            if (($field['type'] === 'image' || $field['type'] === 'file') && isset($field['multiple']) && $field['multiple']) {
+            // Excluir campos de archivos del create (se manejan después)
+            if ($field['type'] === 'image' || $field['type'] === 'file') {
                 unset($validatedData[$field['field']]);
             }
         }
@@ -111,7 +111,8 @@ class AutoCrudController extends Controller
 
         // Guardar custom fields si están habilitados
         if ($modelInstance::hasCustomFieldsEnabled()) {
-            $instance->saveCustomFields($request->all());
+            $requestData = array_filter($request->all(), fn($value) => !($value instanceof \Illuminate\Http\UploadedFile));
+            $instance->saveCustomFields($requestData);
         }
 
         $instance->load($modelInstance::getIncludes());
