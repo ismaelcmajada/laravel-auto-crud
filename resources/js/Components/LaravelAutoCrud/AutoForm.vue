@@ -104,6 +104,7 @@ const initFields = () => {
   // Resetear archivos a eliminar, previews y forzar reseteo del input
   filesToDelete.value = {}
   filePreview.value = {}
+  imagePreview.value = {}
   fileInputKey.value++
 
   if (type.value === "edit" && item.value) {
