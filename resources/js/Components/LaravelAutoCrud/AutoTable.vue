@@ -956,28 +956,30 @@ watch(item, (value) => {
         <tr>
           <td
             v-for="header in finalHeaders.filter(
-              (header) => header.key != 'actions' && header.searchable !== false
+              (header) => header.key != 'actions'
             )"
             :key="header.key"
           >
-            <!-- Filtro booleano tri-estado -->
-            <v-select
-              v-if="isBooleanHeader(header)"
-              v-model="tableData.search[header.key]"
-              @update:model-value="loadItems"
-              :items="booleanFilterOptions"
-              class="px-1"
-              variant="underlined"
-            ></v-select>
-            <!-- Filtro texto normal -->
-            <v-text-field
-              v-else-if="header.key"
-              v-model="tableData.search[header.key]"
-              @input="updateItems"
-              type="text"
-              class="px-1"
-              variant="underlined"
-            ></v-text-field>
+            <template v-if="header.searchable !== false">
+              <!-- Filtro booleano tri-estado -->
+              <v-select
+                v-if="isBooleanHeader(header)"
+                v-model="tableData.search[header.key]"
+                @update:model-value="loadItems"
+                :items="booleanFilterOptions"
+                class="px-1"
+                variant="underlined"
+              ></v-select>
+              <!-- Filtro texto normal -->
+              <v-text-field
+                v-else-if="header.key"
+                v-model="tableData.search[header.key]"
+                @input="updateItems"
+                type="text"
+                class="px-1"
+                variant="underlined"
+              ></v-text-field>
+            </template>
           </td>
         </tr>
       </template>
