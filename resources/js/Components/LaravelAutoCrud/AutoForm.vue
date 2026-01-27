@@ -829,6 +829,13 @@ watch(isFormDirty, (value) => {
       </v-btn>
     </div>
   </v-form>
+  <slot
+    name="after-save"
+    :model="model"
+    :type="type"
+    :item="item"
+    :formData="formData"
+  ></slot>
   <div
     v-if="type === 'edit' && model.externalRelations.length > 0"
     v-for="relation in model.externalRelations"

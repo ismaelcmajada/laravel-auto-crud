@@ -151,10 +151,10 @@ const cancelClose = () => {
                 :key="field.field"
                 #[`field.${field.field}`]="slotProps"
               >
-                <!-- 
-                  Aquí, reexponemos un slot "auto-form.field.xxx" 
-                  de modo que 'AutoTable.vue' (o quien invoque) 
-                  pueda personalizarlo. 
+                <!--
+                  Aquí, reexponemos un slot "auto-form.field.xxx"
+                  de modo que 'AutoTable.vue' (o quien invoque)
+                  pueda personalizarlo.
                 -->
                 <slot
                   :name="`auto-form.field.${field.field}`"
@@ -166,6 +166,10 @@ const cancelClose = () => {
 
               <template #append="slotProps">
                 <slot name="auto-form.append" v-bind="slotProps"> </slot>
+              </template>
+
+              <template #after-save="slotProps">
+                <slot name="auto-form.after-save" v-bind="slotProps"> </slot>
               </template>
 
               <template

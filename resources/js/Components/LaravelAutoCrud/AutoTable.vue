@@ -82,7 +82,7 @@ const dynamicModel = computed(() => {
     // Filtrar tableHeaders igual que en props.model
     const propsHeaderKeys = props.model.tableHeaders.map((h) => h.key)
     const mergedTableHeaders = serverModel.value.tableHeaders.filter((h) =>
-      propsHeaderKeys.includes(h.key)
+      propsHeaderKeys.includes(h.key),
     )
 
     return {
@@ -152,10 +152,10 @@ const finalHeaders = computed(() => {
 
   // Sort custom headers into groups: those with specific positions and those without
   const headersWithPosition = extraHeaders.filter(
-    (h) => h.position || h.before || h.after
+    (h) => h.position || h.before || h.after,
   )
   const headersWithoutPosition = extraHeaders.filter(
-    (h) => !h.position && !h.before && !h.after
+    (h) => !h.position && !h.before && !h.after,
   )
 
   // Start with the original headers
@@ -230,17 +230,17 @@ const finalHeaders = computed(() => {
 
 tableData.search = props.search ?? {}
 tableData.exactFilters = props.exactFilters ?? {}
-tableData.orderBy = props.orderBy ?? []
+tableData.sortBy = props.orderBy ?? []
 
 watch(
   props,
   () => {
     tableData.search = props.search ?? {}
     tableData.exactFilters = props.exactFilters ?? {}
-    tableData.orderBy = props.orderBy ?? []
+    tableData.sortBy = props.orderBy ?? []
     loadItems()
   },
-  { deep: true }
+  { deep: true },
 )
 
 const {
@@ -444,6 +444,14 @@ watch(item, (value) => {
               </slot>
             </template>
 
+            <template #after-save="slotProps">
+              <slot
+                name="auto-form-dialog.auto-form.after-save"
+                v-bind="slotProps"
+              >
+              </slot>
+            </template>
+
             <template
               v-for="relation in model.externalRelations"
               :key="relation.relation"
@@ -619,7 +627,7 @@ watch(item, (value) => {
     <v-row class="align-center my-2 mx-1 rounded pa-2">
       <v-col
         v-for="header in finalHeaders.filter(
-          (h) => h.key !== 'actions' && h.searchable !== false
+          (h) => h.key !== 'actions' && h.searchable !== false,
         )"
         :key="header.key"
       >
@@ -669,7 +677,7 @@ watch(item, (value) => {
                 {{
                   generateItemTitle(
                     header.relation.tableKey,
-                    listItem[header.relation.relation]
+                    listItem[header.relation.relation],
                   )
                 }}
               </template>
@@ -684,7 +692,7 @@ watch(item, (value) => {
                   {{
                     generateItemTitle(
                       externalRelationsMap[header.key].tableKey,
-                      relItem
+                      relItem,
                     )
                   }}
                 </v-chip>
@@ -706,7 +714,7 @@ watch(item, (value) => {
                     @click.stop="
                       openImageDialog(
                         `/laravel-auto-crud/${listItem[header.key]}`,
-                        listItem[header.key]
+                        listItem[header.key],
                       )
                     "
                     class="cursor-pointer"
@@ -956,7 +964,7 @@ watch(item, (value) => {
         <tr>
           <td
             v-for="header in finalHeaders.filter(
-              (header) => header.key != 'actions'
+              (header) => header.key != 'actions',
             )"
             :key="header.key"
           >
@@ -987,7 +995,7 @@ watch(item, (value) => {
       <template
         v-slot:[`item.${header.key}`]="{ item }"
         v-for="header in finalHeaders.filter(
-          (header) => header.key !== 'actions'
+          (header) => header.key !== 'actions',
         )"
       >
         <slot :name="`item.${header.key}`" :item="item">
@@ -997,7 +1005,7 @@ watch(item, (value) => {
               {{
                 generateItemTitle(
                   header.relation.tableKey,
-                  item[header.relation.relation]
+                  item[header.relation.relation],
                 )
               }}
             </template>
@@ -1013,7 +1021,7 @@ watch(item, (value) => {
                 {{
                   generateItemTitle(
                     externalRelationsMap[header.key].tableKey,
-                    relItem
+                    relItem,
                   )
                 }}
               </v-chip>
@@ -1037,7 +1045,7 @@ watch(item, (value) => {
                 @click="
                   openImageDialog(
                     `/laravel-auto-crud/${item[header.key]}`,
-                    item[header.key]
+                    item[header.key],
                   )
                 "
                 :title="'Click para ampliar'"
