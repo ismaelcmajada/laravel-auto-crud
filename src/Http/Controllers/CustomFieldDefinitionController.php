@@ -10,7 +10,7 @@ use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldDefinition;
 
 class CustomFieldDefinitionController extends Controller
 {
-    protected array $validTypes = [
+    protected $validTypes = [
         'string',
         'number',
         'text',
