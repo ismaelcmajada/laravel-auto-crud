@@ -23,11 +23,14 @@ class ModelScanServiceProvider extends ServiceProvider
         $models = [];
 
         foreach ($modelFiles as $modelFile) {
-            $className = '\\App\\Models\\' . Str::replace(
-                ['/', '.php'],
-                ['\\', ''],
-                $modelFile->getRelativePathname()
-            );
+            // getRelativePathname() puede devolver paths con / o \ según entorno
+            $relative = $modelFile->getRelativePathname();
+
+            // Quitar extensión .php y convertir separadores a namespace
+            $relative = str_replace(['/', '\\'], '\\', $relative);
+            $relative = preg_replace('/\.php$/', '', $relative);
+
+            $className = '\\App\\Models\\' . $relative;
 
             if (class_exists($className)) {
                 $reflection = new ReflectionClass($className);
@@ -37,9 +40,7 @@ class ModelScanServiceProvider extends ServiceProvider
                     !$reflection->isAbstract() &&
                     isset(class_uses_recursive($className)['Ismaelcmajada\\LaravelAutoCrud\\Models\\Traits\\AutoCrud'])
                 ) {
-
                     $modelName = Str::lower(Str::afterLast($className, '\\'));
-
                     $models[$modelName] = $className::getModel();
                 }
             }
