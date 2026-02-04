@@ -3,6 +3,8 @@
 namespace Ismaelcmajada\LaravelAutoCrud\Models\Traits;
 
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateTimeWithUserTimezone;
 use Ismaelcmajada\LaravelAutoCrud\Casts\DateWithUserTimezone;
 use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldDefinition;
@@ -17,7 +19,6 @@ trait AutoCrud
 
     protected function initializeAutoCrud()
     {
-
         $this->fillable = array_column(static::getFormFields(), 'field');
 
         foreach (static::getFields() as $field) {
@@ -28,13 +29,14 @@ trait AutoCrud
             } elseif ($field['type'] === 'boolean') {
                 $this->casts[$field['field']] = 'boolean';
             } elseif ($field['type'] === 'password') {
-                $this->casts[$field['field']] = 'hashed';
+                // Laravel 7 no tiene cast "hashed"
+                $this->casts[$field['field']] = 'string';
                 $this->hidden[] = $field['field'];
             } elseif ($field['type'] === 'date') {
                 $this->casts[$field['field']] = DateWithUserTimezone::class . ':d-m-Y';
             } elseif ($field['type'] === 'datetime') {
                 $this->casts[$field['field']] = DateTimeWithUserTimezone::class . ':d-m-Y H:i';
-            } else if ($field['type'] === 'telephone') {
+            } elseif ($field['type'] === 'telephone') {
                 $this->casts[$field['field']] = 'string';
             }
         }
@@ -44,21 +46,18 @@ trait AutoCrud
     {
         $simpleIncludes = [];
         $withTrashedIncludes = [];
-        
-        // Includes estáticos definidos en el modelo
+
         foreach (static::$includes as $include) {
             $simpleIncludes[] = $include;
         }
-        
-        // Siempre incluir records.user
+
         $simpleIncludes[] = 'records.user';
 
-        // Relaciones de campos (belongsTo)
         foreach (static::getFields() as $field) {
             if (isset($field['relation']) && !in_array($field['relation']['relation'], $simpleIncludes)) {
                 $relationName = $field['relation']['relation'];
                 $relatedModelClass = $field['relation']['model'];
-                
+
                 if (class_exists($relatedModelClass) && static::modelUsesSoftDeletes($relatedModelClass)) {
                     $withTrashedIncludes[$relationName] = function ($query) {
                         $query->withTrashed();
@@ -69,12 +68,11 @@ trait AutoCrud
             }
         }
 
-        // Relaciones externas (belongsToMany, hasMany)
         foreach (static::$externalRelations as $relation) {
             $relationName = $relation['relation'];
             if (!in_array($relationName, $simpleIncludes) && !isset($withTrashedIncludes[$relationName])) {
                 $relatedModelClass = $relation['model'];
-                
+
                 if (class_exists($relatedModelClass) && static::modelUsesSoftDeletes($relatedModelClass)) {
                     $withTrashedIncludes[$relationName] = function ($query) {
                         $query->withTrashed();
@@ -85,10 +83,9 @@ trait AutoCrud
             }
         }
 
-        // Combinar: los simples como strings, los withTrashed como closures
         return array_merge($simpleIncludes, $withTrashedIncludes);
     }
-    
+
     protected static function modelUsesSoftDeletes($modelClass)
     {
         return in_array(
@@ -100,7 +97,7 @@ trait AutoCrud
     public static function getEndpoint($model = null)
     {
         $modelName = lcfirst(
-            str_replace('App\\Models\\', '', $model ?? static::class)
+            str_replace('App\\Models\\', '', $model ?: static::class)
         );
 
         return "/laravel-auto-crud/{$modelName}";
@@ -132,9 +129,7 @@ trait AutoCrud
 
     public static function getExternalRelations()
     {
-
         foreach (static::$externalRelations as &$relation) {
-
             $relation['endPoint'] = static::getEndpoint($relation['model']);
 
             if (isset($relation['pivotFields'])) {
@@ -151,12 +146,9 @@ trait AutoCrud
 
     public static function getFormFields()
     {
-
-
         $formFields = array_filter(static::getFields(), function ($field) {
             return $field['form'];
         });
-
 
         foreach ($formFields as $key => $field) {
             if (isset($field['comboField'])) {
@@ -173,13 +165,12 @@ trait AutoCrud
             }
 
             if (isset($field['relation']) && (!isset($field['relation']['polymorphic']) || !$field['relation']['polymorphic'])) {
-                $formFields[$key]['relation']['endPoint'] =  static::getEndpoint($field['relation']['model']);
+                $formFields[$key]['relation']['endPoint'] = static::getEndpoint($field['relation']['model']);
             }
         }
 
         $formFields = array_values($formFields);
 
-        // Agregar custom fields si están habilitados
         if (static::hasCustomFieldsEnabled()) {
             $customFields = static::getCustomFieldsAsFormFields();
             $formFields = array_merge($formFields, $customFields);
@@ -203,9 +194,8 @@ trait AutoCrud
             if (isset($field['relation']) && isset($field['relation']['relation']) && $field['relation']['relation'] === $method) {
                 if (isset($field['relation']['polymorphic']) && $field['relation']['polymorphic'] && $field['relation']['relation'] === $method) {
                     return $this->morphTo($field['relation']['relation'], $field['relation']['morphType'], $field['field']);
-                } else {
-                    return $this->handleRelation($field);
                 }
+                return $this->handleRelation($field);
             }
         }
 
@@ -242,7 +232,7 @@ trait AutoCrud
             throw new \Exception("Modelo relacionado {$relatedModelClass} no existe");
         }
 
-        $relationType = $relation['type'] ?? 'belongsToMany';
+        $relationType = isset($relation['type']) ? $relation['type'] : 'belongsToMany';
 
         if ($relationType === 'hasMany') {
             return $this->handleHasManyRelation($relation, $relatedModelClass);
@@ -254,7 +244,7 @@ trait AutoCrud
     protected function handleHasManyRelation($relation, $relatedModelClass)
     {
         $foreignKey = $relation['foreignKey'];
-        $localKey = $relation['localKey'] ?? 'id';
+        $localKey = isset($relation['localKey']) ? $relation['localKey'] : 'id';
 
         $relationMethod = $this->hasMany($relatedModelClass, $foreignKey, $localKey);
 
@@ -267,11 +257,22 @@ trait AutoCrud
 
     protected function handleBelongsToManyRelation($relation, $relatedModelClass)
     {
-        $relatedPivotModelClass = $relation['pivotModel'] ?? null;
-        if (class_exists($relatedPivotModelClass)) {
-            $relationMethod = $this->belongsToMany($relatedModelClass, $relation['pivotTable'], $relation['foreignKey'], $relation['relatedKey'])->using($relatedPivotModelClass);
+        $relatedPivotModelClass = isset($relation['pivotModel']) ? $relation['pivotModel'] : null;
+
+        if ($relatedPivotModelClass && class_exists($relatedPivotModelClass)) {
+            $relationMethod = $this->belongsToMany(
+                $relatedModelClass,
+                $relation['pivotTable'],
+                $relation['foreignKey'],
+                $relation['relatedKey']
+            )->using($relatedPivotModelClass);
         } else {
-            $relationMethod = $this->belongsToMany($relatedModelClass, $relation['pivotTable'], $relation['foreignKey'], $relation['relatedKey']);
+            $relationMethod = $this->belongsToMany(
+                $relatedModelClass,
+                $relation['pivotTable'],
+                $relation['foreignKey'],
+                $relation['relatedKey']
+            );
         }
 
         if ($this->usesSoftDeletes($relatedModelClass)) {
@@ -280,7 +281,6 @@ trait AutoCrud
 
         if (isset($relation['pivotFields'])) {
             $tableFields = Schema::getColumnListing($relation['pivotTable']);
-
             $relationMethod->withPivot($tableFields);
         }
 
@@ -289,7 +289,6 @@ trait AutoCrud
 
     public static function getModel($processedModels = [])
     {
-
         $forbiddenActions = static::getForbiddenActions();
 
         foreach ($forbiddenActions as $role => $actions) {
@@ -309,10 +308,57 @@ trait AutoCrud
         ];
     }
 
+    // ⚠️ IMPORTANTE: en traits NO uses boot() a secas. Usa bootAutoCrud().
+    protected static function bootAutoCrud()
+    {
+        static::creating(function ($model) {
+            $model->handleEvent('creating');
+        });
+
+        static::created(function ($model) {
+            $model->handleEvent('created');
+        });
+
+        static::updating(function ($model) {
+            $model->handleEvent('updating');
+        });
+
+        static::updated(function ($model) {
+            $model->handleEvent('updated');
+        });
+
+        static::deleting(function ($model) {
+            $model->handleEvent('deleting');
+        });
+
+        static::deleted(function ($model) {
+            $model->handleEvent('deleted');
+        });
+
+        static::saving(function ($model) {
+            // Hash passwords (Laravel 7 compatible)
+            foreach (static::getFields() as $field) {
+                if ($field['type'] === 'password') {
+                    $attr = $field['field'];
+                    $value = $model->getAttribute($attr);
+
+                    if (!empty($value) && Hash::needsRehash($value)) {
+                        $model->setAttribute($attr, Hash::make($value));
+                    }
+                }
+            }
+
+            $model->handleEvent('saving');
+        });
+
+        static::saved(function ($model) {
+            $model->handleEvent('saved');
+        });
+    }
+
     protected static function getTableHeaders()
     {
         $headers = array_map(function ($field) {
-
             if (isset($field['relation'])) {
                 if (!isset($field['relation']['polymorphic']) || !$field['relation']['polymorphic']) {
                     return [
@@ -333,7 +379,6 @@ trait AutoCrud
             ];
         }, static::getTableFields());
 
-        // Agregar custom fields que tienen show_in_table = true
         if (static::hasCustomFieldsEnabled()) {
             $customFieldDefinitions = static::getCustomFieldDefinitions();
             foreach ($customFieldDefinitions as $definition) {
@@ -418,44 +463,6 @@ trait AutoCrud
         return static::$calendarFields;
     }
 
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            $model->handleEvent('creating');
-        });
-
-        static::created(function ($model) {
-            $model->handleEvent('created');
-        });
-
-        static::updating(function ($model) {
-            $model->handleEvent('updating');
-        });
-
-        static::updated(function ($model) {
-            $model->handleEvent('updated');
-        });
-
-        static::deleting(function ($model) {
-            $model->handleEvent('deleting');
-        });
-
-        static::deleted(function ($model) {
-            $model->handleEvent('deleted');
-        });
-
-        static::saving(function ($model) {
-            $model->handleEvent('saving');
-        });
-
-        static::saved(function ($model) {
-            $model->handleEvent('saved');
-        });
-    }
-
     protected function usesSoftDeletes($modelClass)
     {
         return in_array(
@@ -478,7 +485,7 @@ trait AutoCrud
 
     // ========== Custom Fields Support ==========
 
-    public static function hasCustomFieldsEnabled(): bool
+    public static function hasCustomFieldsEnabled()
     {
         return property_exists(static::class, 'customFieldsEnabled') && static::$customFieldsEnabled === true;
     }
@@ -492,14 +499,16 @@ trait AutoCrud
         return CustomFieldDefinition::getFieldsForModel(static::class);
     }
 
-    public static function getCustomFieldsAsFormFields(): array
+    public static function getCustomFieldsAsFormFields()
     {
         if (!static::hasCustomFieldsEnabled()) {
             return [];
         }
 
         return static::getCustomFieldDefinitions()
-            ->map(fn($definition) => $definition->toFormField())
+            ->map(function ($definition) {
+                return $definition->toFormField();
+            })
             ->toArray();
     }
 
@@ -508,7 +517,7 @@ trait AutoCrud
         return $this->morphMany(CustomFieldValue::class, 'model', 'model_type', 'model_id');
     }
 
-    public function getCustomFieldsValues(): array
+    public function getCustomFieldsValues()
     {
         if (!static::hasCustomFieldsEnabled() || !$this->exists) {
             return [];
@@ -517,14 +526,17 @@ trait AutoCrud
         return CustomFieldValue::getValuesForModel(static::class, $this->id);
     }
 
-    public function saveCustomFields(array $data): void
+    public function saveCustomFields(array $data)
     {
         if (!static::hasCustomFieldsEnabled()) {
             return;
         }
 
         $customData = collect($data)
-            ->filter(fn($value, $key) => str_starts_with($key, 'custom_'))
+            ->filter(function ($value, $key) {
+                // PHP 7.2 compatible "starts with"
+                return strpos($key, 'custom_') === 0;
+            })
             ->toArray();
 
         if (!empty($customData)) {
@@ -532,7 +544,7 @@ trait AutoCrud
         }
     }
 
-    public function toArrayWithCustomFields(): array
+    public function toArrayWithCustomFields()
     {
         $data = $this->toArray();
         return array_merge($data, $this->getCustomFieldsValues());
