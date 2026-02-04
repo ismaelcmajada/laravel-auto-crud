@@ -20,9 +20,13 @@ class DateWithUserTimezone implements CastsAttributes
     /**
      * Cast the given value.
      *
-     * @param  array<string, mixed>  $attributes
+     * @param  Model  $model
+     * @param  string  $key
+     * @param  mixed  $value
+     * @param  array  $attributes
+     * @return mixed
      */
-    public function get(Model $model, string $key, mixed $value, array $attributes): mixed
+    public function get($model, $key, $value, $attributes)
     {
         if (is_null($value)) {
             return $value;
@@ -38,9 +42,13 @@ class DateWithUserTimezone implements CastsAttributes
     /**
      * Prepare the given value for storage.
      *
-     * @param  array<string, mixed>  $attributes
+     * @param  Model  $model
+     * @param  string  $key
+     * @param  mixed  $value
+     * @param  array  $attributes
+     * @return mixed
      */
-    public function set(Model $model, string $key, mixed $value, array $attributes): mixed
+    public function set($model, $key, $value, $attributes)
     {
         if (is_null($value)) {
             return $value;

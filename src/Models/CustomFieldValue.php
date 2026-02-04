@@ -31,12 +31,17 @@ class CustomFieldValue extends Model
             return $this->value;
         }
 
-        return match ($this->definition->type) {
-            'number' => is_numeric($this->value) ? (float) $this->value : null,
-            'boolean' => $this->value === '1' || $this->value === 1 || $this->value === true,
-            'date', 'datetime' => $this->value,
-            default => $this->value,
-        };
+        switch ($this->definition->type) {
+            case 'number':
+                return is_numeric($this->value) ? (float) $this->value : null;
+            case 'boolean':
+                return $this->value === '1' || $this->value === 1 || $this->value === true;
+            case 'date':
+            case 'datetime':
+                return $this->value;
+            default:
+                return $this->value;
+        }
     }
 
     public static function getValuesForModel(string $modelType, int $modelId): array
@@ -84,9 +89,11 @@ class CustomFieldValue extends Model
             return null;
         }
 
-        return match ($type) {
-            'boolean' => $value ? '1' : '0',
-            default => (string) $value,
-        };
+        switch ($type) {
+            case 'boolean':
+                return $value ? '1' : '0';
+            default:
+                return (string) $value;
+        }
     }
 }

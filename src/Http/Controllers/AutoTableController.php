@@ -56,7 +56,7 @@ class AutoTableController extends Controller
                 if (!empty($value)) {
 
                     // 0) Check si es un custom field (empieza con custom_)
-                    if (str_starts_with($key, 'custom_')) {
+                    if (strpos($key, 'custom_') === 0) {
                         $this->applyCustomFieldSearch($query, $modelInstance, $key, $value);
                         continue;
                     }
@@ -120,7 +120,7 @@ class AutoTableController extends Controller
                     $order = $sort['order'];
 
                     // 0) Check si es un custom field (empieza con custom_)
-                    if (str_starts_with($key, 'custom_')) {
+                    if (strpos($key, 'custom_') === 0) {
                         $this->applyCustomFieldOrder($query, $modelInstance, $mainTable, $key, $order);
                         continue;
                     }
