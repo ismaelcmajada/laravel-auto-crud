@@ -65,7 +65,9 @@ class AutoCrudController extends Controller
         }
 
         // Excluir custom fields del modelo principal (se guardan aparte)
-        $validatedData = array_filter($validatedData, fn($value, $key) => !str_starts_with($key, 'custom_'), ARRAY_FILTER_USE_BOTH);
+        $validatedData = array_filter($validatedData, function ($value, $key) {
+            return strpos($key, 'custom_') !== 0;
+        }, ARRAY_FILTER_USE_BOTH);
 
         $instance = $modelInstance::create($validatedData);
 
@@ -111,7 +113,9 @@ class AutoCrudController extends Controller
 
         // Guardar custom fields si están habilitados
         if ($modelInstance::hasCustomFieldsEnabled()) {
-            $requestData = array_filter($request->all(), fn($value) => !($value instanceof \Illuminate\Http\UploadedFile));
+            $requestData = array_filter($request->all(), function ($value) {
+                return !($value instanceof \Illuminate\Http\UploadedFile);
+            });
             $instance->saveCustomFields($requestData);
         }
 
@@ -147,7 +151,9 @@ class AutoCrudController extends Controller
                     if (!empty($filesToDelete)) {
                         foreach ($filesToDelete as $fileToDelete) {
                             Storage::delete($fileToDelete);
-                            $existingFiles = array_filter($existingFiles, fn($f) => $f !== $fileToDelete);
+                            $existingFiles = array_filter($existingFiles, function ($f) use ($fileToDelete) {
+                                return $f !== $fileToDelete;
+                            });
                         }
                         $existingFiles = array_values($existingFiles); // Reindexar
                     }
@@ -209,7 +215,9 @@ class AutoCrudController extends Controller
         }
 
         // Excluir custom fields del modelo principal (se guardan aparte)
-        $validatedData = array_filter($validatedData, fn($value, $key) => !str_starts_with($key, 'custom_'), ARRAY_FILTER_USE_BOTH);
+        $validatedData = array_filter($validatedData, function ($value, $key) {
+            return strpos($key, 'custom_') !== 0;
+        }, ARRAY_FILTER_USE_BOTH);
 
         $updated = $instance->update($validatedData);
 
