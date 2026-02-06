@@ -34,6 +34,7 @@ const props = defineProps([
   "customHeaders",
   "hideReset",
   "listMode",
+  "rowProps",
 ])
 
 const emit = defineEmits([
@@ -885,6 +886,7 @@ watch(item, (value) => {
       v-model:sort-by="tableData.sortBy"
       v-model:items-per-page="tableData.itemsPerPage"
       @update:options="loadItems()"
+      :row-props="props.rowProps"
     >
       <template v-slot:top>
         <v-toolbar :class="{ 'bg-red-lighten-2': tableData.deleted }" flat>
