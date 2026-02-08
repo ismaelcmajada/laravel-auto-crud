@@ -35,6 +35,7 @@ const props = defineProps([
   "hideReset",
   "listMode",
   "rowProps",
+  "hiddenColumns",
 ])
 
 const emit = defineEmits([
@@ -133,6 +134,13 @@ const finalHeaders = computed(() => {
     itemHeaders.value.length > 0
       ? [...itemHeaders.value]
       : [...model.value.tableHeaders]
+
+  // Filtrar columnas ocultas por hiddenColumns prop
+  if (Array.isArray(props.hiddenColumns) && props.hiddenColumns.length > 0) {
+    originalHeaders = originalHeaders.filter(
+      (h) => !props.hiddenColumns.includes(h.key),
+    )
+  }
 
   // En listMode, filtrar columnas que fueron excluidas en props.model.tableHeaders
   // (por ejemplo, el FK en relaciones hasMany)
