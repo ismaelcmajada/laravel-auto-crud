@@ -205,28 +205,47 @@ class AutoTableController extends Controller
                 $fieldName = $fieldParts[1];
 
                 $query->whereHas($relationName, function ($q) use ($fieldName, $value, $fields, $searchKey) {
+                    $searchWords = explode(' ', $value);
 
                     foreach ($fields as $field) {
                         if ($field['field'] === $searchKey && $field['type'] === 'date') {
-                            return $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y') LIKE '%$value%'");
+                            foreach ($searchWords as $word) {
+                                $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y') LIKE ?", ['%' . $word . '%']);
+                            }
+                            return;
                         } else if ($field['field'] === $searchKey && $field['type'] === 'datetime') {
-                            return $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y %H:%i') LIKE '%$value%'");
+                            foreach ($searchWords as $word) {
+                                $q->whereRaw("DATE_FORMAT(" . $fieldName . ", '%d-%m-%Y %H:%i') LIKE ?", ['%' . $word . '%']);
+                            }
+                            return;
                         }
                     }
 
-                    $q->where($fieldName, 'LIKE', '%' . $value . '%');
+                    foreach ($searchWords as $word) {
+                        $q->where($fieldName, 'LIKE', '%' . $word . '%');
+                    }
                 });
             } else {
 
+                $searchWords = explode(' ', $value);
+
                 foreach ($fields as $field) {
                     if ($field['field'] === $searchKey && $field['type'] === 'date') {
-                        return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y') LIKE '%$value%'");
+                        foreach ($searchWords as $word) {
+                            $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y') LIKE ?", ['%' . $word . '%']);
+                        }
+                        return;
                     } else if ($field['field'] === $searchKey && $field['type'] === 'datetime') {
-                        return $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y %H:%i') LIKE '%$value%'");
+                        foreach ($searchWords as $word) {
+                            $query->whereRaw("DATE_FORMAT(" . $query->getModel()->getTable() . "." . $searchKey . ", '%d-%m-%Y %H:%i') LIKE ?", ['%' . $word . '%']);
+                        }
+                        return;
                     }
                 }
 
-                $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $value . '%');
+                foreach ($searchWords as $word) {
+                    $query->where($query->getModel()->getTable() . '.' . $searchKey, 'LIKE', '%' . $word . '%');
+                }
             }
         } else {
 
@@ -556,13 +575,16 @@ class AutoTableController extends Controller
                 }
             }
         } else {
-            // Campos no booleanos: búsqueda normal con LIKE
-            $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $value, $modelType) {
+            // Campos no booleanos: búsqueda separada por palabras con LIKE
+            $searchWords = explode(' ', $value);
+            $query->whereIn($modelInstance->getTable() . '.id', function ($subQuery) use ($definition, $searchWords, $modelType) {
                 $subQuery->select('model_id')
                     ->from('custom_field_values')
                     ->where('custom_field_definition_id', $definition->id)
-                    ->where('model_type', $modelType)
-                    ->where('value', 'LIKE', '%' . $value . '%');
+                    ->where('model_type', $modelType);
+                foreach ($searchWords as $word) {
+                    $subQuery->where('value', 'LIKE', '%' . $word . '%');
+                }
             });
         }
     }
