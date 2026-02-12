@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue"
+import { ref, computed, watch, onMounted, nextTick } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import AutocompleteServer from "./AutocompleteServer.vue"
 import axios from "axios"
@@ -62,8 +62,44 @@ const serverSideRelationItems = ref({})
 // Aquí guardamos el estado de "show" para cada pivotField con storeShortcut
 const storePivotShortcutShows = ref({})
 
+// Aquí guardamos items creados via storeShortcut para relaciones serverSide en pivot
+const storePivotShortcutCreatedItems = ref({})
+
 // Clonamos `item` para manipularlo localmente
 const item = ref(props.item)
+
+const handleExternalStoreShortcutSuccess = (flash) => {
+  const createdItem = flash.data
+  if (!createdItem) return
+
+  if (props.externalRelation.pivotFields) {
+    // Con pivotFields: solo pre-seleccionar para que el usuario rellene los campos pivot
+    selectedItem.value = createdItem.id
+  } else {
+    // Sin pivotFields: auto-vincular directamente
+    selectedItem.value = createdItem.id
+    nextTick(() => {
+      addItem()
+    })
+  }
+
+  getItems()
+}
+
+const handlePivotStoreShortcutSuccess = (field, flash) => {
+  const createdItem = flash.data
+  if (!createdItem) return
+
+  // Asignar el id del item creado al campo pivot
+  pivotData.value[field.field] = createdItem.id
+
+  if (field.relation.serverSide) {
+    // Guardar el item creado para pasarlo al autocomplete-server
+    storePivotShortcutCreatedItems.value[field.field] = createdItem
+  } else {
+    getRelations()
+  }
+}
 
 // ------------------------------------------------------------
 // FUNCIONES
@@ -366,6 +402,7 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="props.externalRelation.model"
+              @success="handleExternalStoreShortcutSuccess"
               @update:show="getItems"
             />
           </template>
@@ -413,6 +450,7 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="props.externalRelation.model"
+              @success="handleExternalStoreShortcutSuccess"
               @update:show="getItems"
             />
           </template>
@@ -456,6 +494,7 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="props.externalRelation.model"
+              @success="handleExternalStoreShortcutSuccess"
               @update:show="getItems"
             />
           </template>
@@ -500,6 +539,7 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="props.externalRelation.model"
+              @success="handleExternalStoreShortcutSuccess"
               @update:show="getItems"
             />
           </template>
@@ -588,6 +628,7 @@ watch(
           :end-point="field.relation.endPoint"
           :filtered-items="props.filteredItems?.[field.relation.relation]"
           :form-data="props.formData"
+          :item="storePivotShortcutCreatedItems[field.field] || null"
         >
           <template v-if="field.relation.storeShortcut" v-slot:prepend>
             <v-btn
@@ -603,6 +644,9 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="field.relation.model"
+              @success="
+                (flash) => handlePivotStoreShortcutSuccess(field, flash)
+              "
             />
           </template>
         </autocomplete-server>
@@ -649,6 +693,9 @@ watch(
               :customFilters="props.customFilters"
               :customItemProps="props.customItemProps"
               :modelName="field.relation.model"
+              @success="
+                (flash) => handlePivotStoreShortcutSuccess(field, flash)
+              "
               @update:show="getRelations"
             />
           </template>
@@ -888,6 +935,9 @@ watch(
                 :customFilters="props.customFilters"
                 :customItemProps="props.customItemProps"
                 :modelName="field.relation.model"
+                @success="
+                  (flash) => handlePivotStoreShortcutSuccess(field, flash)
+                "
               />
             </template>
           </autocomplete-server>
@@ -933,6 +983,9 @@ watch(
                 :customFilters="props.customFilters"
                 :customItemProps="props.customItemProps"
                 :modelName="field.relation.model"
+                @success="
+                  (flash) => handlePivotStoreShortcutSuccess(field, flash)
+                "
                 @update:show="getRelations"
               />
             </template>

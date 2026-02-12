@@ -51,7 +51,7 @@ const filteredFormFields = computed(() => {
 const hiddenFormFieldsLength = computed(() => {
   return (
     filteredFormFields.value.filter(
-      (field) => field.hidden || (type.value === "create" && field.onlyUpdate)
+      (field) => field.hidden || (type.value === "create" && field.onlyUpdate),
     ).length ?? 0
   )
 })
@@ -60,6 +60,7 @@ const relations = ref({})
 const comboboxItems = ref({})
 const storeShortcutShows = ref({})
 const storeExternalShortcutShows = ref({})
+const storeShortcutCreatedItems = ref({})
 
 const imagePreview = ref({})
 const filePreview = ref({})
@@ -68,7 +69,7 @@ const fileInputKey = ref(0)
 
 const getRelations = () => {
   const relationsFromFormFields = filteredFormFields.value.filter(
-    (field) => field.relation && !field.relation.serverSide
+    (field) => field.relation && !field.relation.serverSide,
   )
 
   relationsFromFormFields.forEach((field) => {
@@ -80,7 +81,7 @@ const getRelations = () => {
 
 const getComboboxItems = () => {
   const comboboxFields = filteredFormFields.value.filter(
-    (field) => field.type === "combobox"
+    (field) => field.type === "combobox",
   )
 
   comboboxFields.forEach((field) => {
@@ -97,7 +98,7 @@ const mapComboboxItems = (field, items) => {
 const form = ref(false)
 
 const formData = useForm(
-  Object.fromEntries(filteredFormFields.value.map((f) => [f.field, null]))
+  Object.fromEntries(filteredFormFields.value.map((f) => [f.field, null])),
 )
 
 const initFields = () => {
@@ -138,7 +139,7 @@ const initFields = () => {
             if (item.value[field.field]) {
               try {
                 filePreview.value[field.field] = JSON.parse(
-                  item.value[field.field]
+                  item.value[field.field],
                 )
               } catch (e) {
                 filePreview.value[field.field] = []
@@ -371,7 +372,7 @@ watch(
   (newValue) => {
     emit("formChange", newValue)
   },
-  { deep: true }
+  { deep: true },
 )
 
 watch(
@@ -379,17 +380,17 @@ watch(
   () => {
     initFields()
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 const updateRelatedFields = (foreignKey, value) => {
   const relatedFields = filteredFormFields.value.filter(
-    (field) => field.foreignKey && field.foreignKey === foreignKey
+    (field) => field.foreignKey && field.foreignKey === foreignKey,
   )
 
   relatedFields.forEach((field) => {
     formData[field.field] = relations.value[foreignKey].find(
-      (relation) => relation.id === value
+      (relation) => relation.id === value,
     )[field.field]
   })
 }
@@ -401,11 +402,11 @@ const updateComboField = (field, value) => {
   } else {
     if (
       relations.value[field.field].find(
-        (relation) => relation[field.relation.formKey] === value
+        (relation) => relation[field.relation.formKey] === value,
       )
     ) {
       formData[field.field] = relations.value[field.field].find(
-        (relation) => relation[field.relation.formKey] === value
+        (relation) => relation[field.relation.formKey] === value,
       ).id
     } else {
       formData[field.field] = null
@@ -416,6 +417,22 @@ const updateComboField = (field, value) => {
 
 getRelations()
 getComboboxItems()
+
+const handleStoreShortcutSuccess = (field, flash) => {
+  const createdItem = flash.data
+  if (!createdItem) return
+
+  // Asignar el id del item creado al campo del formulario
+  formData[field.field] = createdItem.id
+
+  if (field.relation.serverSide) {
+    // Para serverSide, guardar el item creado para pasarlo como prop
+    storeShortcutCreatedItems.value[field.field] = createdItem
+  } else {
+    // Para no-serverSide, recargar las relaciones
+    getRelations()
+  }
+}
 
 const isFormDirty = computed(() => {
   return formData.isDirty
@@ -677,8 +694,8 @@ watch(isFormDirty, (value) => {
                       field,
                       props.filteredItems[field.field](
                         comboboxItems[field.field],
-                        props.formData
-                      )
+                        props.formData,
+                      ),
                     )
                   : mapComboboxItems(field, comboboxItems[field.field])
               "
@@ -699,7 +716,7 @@ watch(isFormDirty, (value) => {
                 props.filteredItems?.[field.relation.relation]
                   ? props.filteredItems[field.relation.relation](
                       relations[field.field],
-                      props.formData
+                      props.formData,
                     )
                   : relations[field.field]
               "
@@ -712,7 +729,7 @@ watch(isFormDirty, (value) => {
                     item,
                     queryText,
                     itemText,
-                    props.customFilters?.[field.relation.relation]
+                    props.customFilters?.[field.relation.relation],
                   )
               "
               item-value="id"
@@ -732,8 +749,9 @@ watch(isFormDirty, (value) => {
                   :filteredItems="props.filteredItems"
                   :customFilters="props.customFilters"
                   :customItemProps="props.customItemProps"
-                  @update:show="getRelations"
                   :modelName="field.relation.model"
+                  @success="(flash) => handleStoreShortcutSuccess(field, flash)"
+                  @update:show="getRelations"
                 />
               </template>
             </v-autocomplete>
@@ -751,7 +769,7 @@ watch(isFormDirty, (value) => {
                     item,
                     queryText,
                     itemText,
-                    props.customFilters?.[field.relation.relation]
+                    props.customFilters?.[field.relation.relation],
                   )
               "
               v-model="formData[field.field]"
@@ -759,7 +777,11 @@ watch(isFormDirty, (value) => {
               :rules="getFieldRules(formData[field.field], field)"
               @update:model-value="updateRelatedFields(field.field, $event)"
               :item="
-                formData[field.field] ? item?.[field.relation.relation] : null
+                storeShortcutCreatedItems[field.field]
+                  ? storeShortcutCreatedItems[field.field]
+                  : formData[field.field]
+                    ? item?.[field.relation.relation]
+                    : null
               "
             >
               <template v-if="field.relation.storeShortcut" v-slot:prepend>
@@ -774,8 +796,9 @@ watch(isFormDirty, (value) => {
                   :filteredItems="props.filteredItems"
                   :customFilters="props.customFilters"
                   :customItemProps="props.customItemProps"
-                  @update:show="getRelations"
                   :modelName="field.relation.model"
+                  @success="(flash) => handleStoreShortcutSuccess(field, flash)"
+                  @update:show="getRelations"
                 />
               </template>
             </autocomplete-server>
@@ -789,7 +812,7 @@ watch(isFormDirty, (value) => {
                 props.filteredItems?.[field.relation.relation]
                   ? props.filteredItems[field.relation.relation](
                       relations[field.field],
-                      props.formData
+                      props.formData,
                     )
                   : relations[field.field]
               "
@@ -801,7 +824,7 @@ watch(isFormDirty, (value) => {
                     item,
                     queryText,
                     itemText,
-                    props.customFilters?.[field.relation.relation]
+                    props.customFilters?.[field.relation.relation],
                   )
               "
               @update:model-value="updateComboField(field, $event)"
