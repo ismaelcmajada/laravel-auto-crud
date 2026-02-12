@@ -65,39 +65,58 @@ const storePivotShortcutShows = ref({})
 // Aquí guardamos items creados via storeShortcut para relaciones serverSide en pivot
 const storePivotShortcutCreatedItems = ref({})
 
+// Item creado via storeShortcut para la relación principal serverSide
+const storeExternalShortcutCreatedItem = ref(null)
+
 // Clonamos `item` para manipularlo localmente
 const item = ref(props.item)
 
-const handleExternalStoreShortcutSuccess = (flash) => {
+const handleExternalStoreShortcutSuccess = async (flash) => {
   const createdItem = flash.data
   if (!createdItem) return
 
   if (props.externalRelation.pivotFields) {
-    // Con pivotFields: solo pre-seleccionar para que el usuario rellene los campos pivot
+    // Con pivotFields: recargar items y pre-seleccionar después para que el autocomplete lo muestre
+    if (props.externalRelation.serverSide) {
+      // Para serverSide: guardar el item creado para pasarlo al autocomplete-server
+      storeExternalShortcutCreatedItem.value = createdItem
+    } else {
+      const response = await axios.get(`${props.externalRelation.endPoint}/all`)
+      items.value = response.data
+      if (!props.noFilterItems) {
+        items.value = items.value.filter((relatedItem) => {
+          return !item.value[props.externalRelation.relation].some(
+            (relatedItemFromItem) => relatedItem.id === relatedItemFromItem.id,
+          )
+        })
+      }
+      await nextTick()
+    }
     selectedItem.value = createdItem.id
   } else {
-    // Sin pivotFields: auto-vincular directamente
+    // Sin pivotFields: auto-vincular directamente (no necesita mostrar en autocomplete)
     selectedItem.value = createdItem.id
-    nextTick(() => {
-      addItem()
-    })
+    await nextTick()
+    addItem()
   }
-
-  getItems()
 }
 
 const handlePivotStoreShortcutSuccess = (field, flash) => {
   const createdItem = flash.data
   if (!createdItem) return
 
-  // Asignar el id del item creado al campo pivot
-  pivotData.value[field.field] = createdItem.id
-
   if (field.relation.serverSide) {
-    // Guardar el item creado para pasarlo al autocomplete-server
+    // Para serverSide: guardar el item creado y asignar el id
     storePivotShortcutCreatedItems.value[field.field] = createdItem
+    pivotData.value[field.field] = createdItem.id
   } else {
-    getRelations()
+    // Para no-serverSide: recargar items y asignar el id después de que carguen
+    axios.get(`${field.relation.endPoint}/all`).then((response) => {
+      relations.value[field.field] = response.data
+      nextTick(() => {
+        pivotData.value[field.field] = createdItem.id
+      })
+    })
   }
 }
 
@@ -524,6 +543,7 @@ watch(
             props.filteredItems?.[props.externalRelation.relation]
           "
           :form-data="props.formData"
+          :item="storeExternalShortcutCreatedItem"
         >
           <!-- storeShortcut para la relación principal -->
           <template v-if="props.externalRelation.storeShortcut" v-slot:prepend>
