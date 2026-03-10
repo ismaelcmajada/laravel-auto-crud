@@ -418,6 +418,7 @@ watch(item, (value) => {
             :customItemProps="props.customItemProps"
             @formChange="emit('formChange', $event)"
             @isDirty="handleIsFormDirty($event)"
+            @close="showFormDialog = false"
           >
             <template #prepend="slotProps">
               <slot

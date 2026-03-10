@@ -28,6 +28,7 @@ const emit = defineEmits([
   "formChange",
   "isDirty",
   "success",
+  "close",
 ])
 
 const model = computed(() => {
@@ -228,6 +229,8 @@ const submit = () => {
         emit("success", page.props.flash)
         if (model.value.externalRelations.length > 0) {
           type.value = "edit"
+        } else {
+          emit("close")
         }
       },
     })

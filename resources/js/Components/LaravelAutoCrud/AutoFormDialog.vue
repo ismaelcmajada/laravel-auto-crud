@@ -143,6 +143,7 @@ const cancelClose = () => {
               @formChange="emit('formChange', $event)"
               @isDirty="handleIsFormDirty($event)"
               @success="emit('success', $event)"
+              @close="((isFormDirty = false), (show = false))"
             >
               <template #prepend="slotProps">
                 <slot name="auto-form.prepend" v-bind="slotProps"> </slot>

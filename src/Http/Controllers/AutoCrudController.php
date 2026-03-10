@@ -259,12 +259,8 @@ class AutoCrudController extends Controller
     {
         $instance = $this->getModel($model)::onlyTrashed()->findOrFail($id);
         foreach ($instance::getFormFields() as $field) {
-            if ($field['type'] === 'image') {
-                Storage::delete($field['public'] ? 'public/images/' . $model . '/' . $field['field'] . '/' . $id : 'private/images/' . $model . '/' . $field['field'] . '/' . $id);
-            }
-
-            if ($field['type'] === 'file') {
-                Storage::delete($field['public'] ? 'public/files/' . $model . '/' . $field['field'] . '/' . $id : 'private/files/' . $model . '/' . $field['field'] . '/' . $id);
+            if (in_array($field['type'], ['image', 'file']) && !empty($instance->{$field['field']})) {
+                Storage::delete($instance->{$field['field']});
             }
         }
 
