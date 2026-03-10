@@ -63,6 +63,8 @@ const storeShortcutShows = ref({})
 const storeExternalShortcutShows = ref({})
 const storeShortcutCreatedItems = ref({})
 
+const formRef = ref(null)
+
 const imagePreview = ref({})
 const filePreview = ref({})
 const filesToDelete = ref({})
@@ -283,6 +285,10 @@ const handleFileUpload = (file, fileFieldName, multiple = false) => {
     // Si se vacía el input, limpiar archivos pendientes
     clearFileInput(fileFieldName)
   }
+
+  nextTick(() => {
+    formRef.value?.validate()
+  })
 }
 
 const clearFileInput = (fileFieldName) => {
@@ -313,6 +319,10 @@ const clearFileInput = (fileFieldName) => {
       return newData
     })
   }
+
+  nextTick(() => {
+    formRef.value?.validate()
+  })
 }
 
 const removeImage = (imageFieldName) => {
@@ -360,6 +370,10 @@ const removeFile = (fileFieldName, index = null) => {
       [fileFieldName + "_edited"]: true,
     }))
   }
+
+  nextTick(() => {
+    formRef.value?.validate()
+  })
 }
 
 const downloadFile = (fileFieldName, filePath = null) => {
@@ -447,7 +461,7 @@ watch(isFormDirty, (value) => {
 </script>
 
 <template>
-  <v-form v-model="form" @submit.prevent="submit">
+  <v-form ref="formRef" v-model="form" @submit.prevent="submit">
     <slot
       name="prepend"
       :model="model"
@@ -561,7 +575,9 @@ watch(isFormDirty, (value) => {
                 :label="field.rules?.required ? field.name + ' *' : field.name"
                 :rules="
                   getFieldRules(
-                    formData[field.field],
+                    formData[field.field] === '__DELETE_MARKER__'
+                      ? null
+                      : formData[field.field],
                     field,
                     filePreview[field.field]?.length
                       ? 'skipRequired'
