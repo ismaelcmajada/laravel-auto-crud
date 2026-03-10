@@ -69,7 +69,7 @@ abstract class BaseFormRequest extends FormRequest
         $fieldRules = [];
 
         if (isset($field['rules']['required']) && $field['rules']['required']) {
-            if ($field['type'] !== 'image' && $field['type'] !== 'password') {
+            if ($field['type'] !== 'image' && $field['type'] !== 'password' && $field['type'] !== 'file') {
                 $fieldRules[] = 'required';
             }
         } else {

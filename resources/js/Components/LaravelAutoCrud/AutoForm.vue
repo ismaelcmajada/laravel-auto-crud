@@ -559,7 +559,15 @@ watch(isFormDirty, (value) => {
                 v-if="field.multiple"
                 :key="`file-${field.field}-${fileInputKey}`"
                 :label="field.rules?.required ? field.name + ' *' : field.name"
-                :rules="getFieldRules(formData[field.field], field)"
+                :rules="
+                  getFieldRules(
+                    formData[field.field],
+                    field,
+                    filePreview[field.field]?.length
+                      ? 'skipRequired'
+                      : undefined,
+                  )
+                "
                 @change="(file) => handleFileUpload(file, field.field, true)"
                 @click:clear="() => clearFileInput(field.field)"
                 :accept="field.rules?.accept"
