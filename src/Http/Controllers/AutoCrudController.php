@@ -161,13 +161,14 @@ class AutoCrudController extends Controller
                     // Añadir nuevos archivos
                     if ($request->hasFile($field['field'])) {
                         $storagePath = $field['public'] ? 'public/' : 'private/';
-                        $storagePath .= 'files/' . $model;
+                        $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
+                        $storagePath .= $model;
                         
                         foreach ($request->file($field['field']) as $file) {
                             $fileName = $field['field'] . '/' . $id . '_' . time() . '_' . $file->getClientOriginalName();
                             $filePath = $file->storeAs($storagePath, $fileName);
 
-                            if (!$field['public']) {
+                            if (!$field['public'] && $field['type'] === 'file') {
                                 $fileContent = Storage::get($filePath);
                                 $encryptedContent = Crypt::encryptString($fileContent);
                                 Storage::put($filePath, $encryptedContent);
@@ -260,7 +261,14 @@ class AutoCrudController extends Controller
         $instance = $this->getModel($model)::onlyTrashed()->findOrFail($id);
         foreach ($instance::getFormFields() as $field) {
             if (in_array($field['type'], ['image', 'file']) && !empty($instance->{$field['field']})) {
-                Storage::delete($instance->{$field['field']});
+                if (isset($field['multiple']) && $field['multiple']) {
+                    $filePaths = json_decode($instance->{$field['field']}, true) ?? [];
+                    foreach ($filePaths as $filePath) {
+                        Storage::delete($filePath);
+                    }
+                } else {
+                    Storage::delete($instance->{$field['field']});
+                }
             }
         }
 
