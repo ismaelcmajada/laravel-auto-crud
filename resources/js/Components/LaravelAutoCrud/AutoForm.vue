@@ -562,7 +562,14 @@ watch(isFormDirty, (value) => {
                 v-if="!field.multiple && !filePreview[field.field]"
                 :label="field.rules?.required ? field.name + ' *' : field.name"
                 v-model="formData[field.field]"
-                :rules="getFieldRules(formData[field.field], field)"
+                :rules="
+                  getFieldRules(
+                    formData[field.field] === '__DELETE_MARKER__'
+                      ? null
+                      : formData[field.field],
+                    field,
+                  )
+                "
                 @change="(file) => handleFileUpload(file, field.field, false)"
                 :accept="field.rules?.accept"
                 prepend-icon="mdi-file"
