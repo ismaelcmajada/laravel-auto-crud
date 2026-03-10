@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Record;
 use Illuminate\Support\Facades\Auth;
 use Ismaelcmajada\LaravelAutoCrud\Http\Requests\DynamicFormRequest;
+use Ismaelcmajada\LaravelAutoCrud\Events\AutoCrudActionCompleted;
 
 class AutoCrudController extends Controller
 {
@@ -131,6 +132,7 @@ class AutoCrudController extends Controller
 
         if ($created) {
             $this->setRecord($model, $instance->id, 'create');
+            AutoCrudActionCompleted::dispatch('store', $model, $instance, $validatedData);
             return Redirect::back()->with(['success' => 'Elemento creado.', 'data' => $instance]);
         }
     }
@@ -239,6 +241,7 @@ class AutoCrudController extends Controller
 
         if ($updated) {
             $this->setRecord($model, $instance->id, 'update');
+            AutoCrudActionCompleted::dispatch('update', $model, $instance, $validatedData);
             return Redirect::back()->with(['success' => 'Elemento editado.', 'data' => $instance]);
         }
     }
@@ -251,6 +254,7 @@ class AutoCrudController extends Controller
         if ($instance->delete()) {
 
             $this->setRecord($model, $instance->id, 'destroy');
+            AutoCrudActionCompleted::dispatch('destroy', $model, $instance);
 
             return Redirect::back()->with('success', 'Elemento movido a la papelera.');
         }
@@ -280,6 +284,7 @@ class AutoCrudController extends Controller
         if ($instance->forceDelete()) {
 
             $this->setRecord($model, $instance->id, 'destroyPermanent');
+            AutoCrudActionCompleted::dispatch('destroyPermanent', $model, $instance);
 
             return Redirect::back()->with('success', 'Elemento eliminado de forma permanente.');
         }
@@ -292,6 +297,7 @@ class AutoCrudController extends Controller
         if ($instance->restore()) {
 
             $this->setRecord($model, $instance->id, 'restore');
+            AutoCrudActionCompleted::dispatch('restore', $model, $instance);
 
             return Redirect::back()->with('success', 'Elemento restaurado.');
         }
@@ -314,6 +320,7 @@ class AutoCrudController extends Controller
         $instance->load($instance::getIncludes());
 
         $this->setRecord($model, $instance->id, 'update');
+        AutoCrudActionCompleted::dispatch('bind', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
 
         return Redirect::back()->with(['success' => 'Elemento vinculado', 'data' => $instance]);
     }
@@ -328,6 +335,7 @@ class AutoCrudController extends Controller
         $instance->load($instance::getIncludes());
 
         $this->setRecord($model, $instance->id, 'update');
+        AutoCrudActionCompleted::dispatch('updatePivot', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
         return Redirect::back()->with(['success' => 'Elemento actualizado', 'data' => $instance]);
     }
 
@@ -339,6 +347,7 @@ class AutoCrudController extends Controller
         $instance->load($instance::getIncludes());
 
         $this->setRecord($model, $instance->id, 'update');
+        AutoCrudActionCompleted::dispatch('unbind', $model, $instance, [], ['externalRelation' => $externalRelation, 'item' => $item]);
         return Redirect::back()->with(['success' => 'Elemento desvinculado', 'data' => $instance]);
     }
 
