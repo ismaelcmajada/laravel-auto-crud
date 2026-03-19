@@ -184,14 +184,42 @@ abstract class BaseFormRequest extends FormRequest
                         }
                     };
                 } else {
-                    // Archivo único
-                    $fieldRules[] = 'file';
-                    if (isset($field['rules']['max'])) {
-                        $fieldRules[] = 'max:' . $field['rules']['max'];
-                    }
-                    if (isset($field['rules']['mimes'])) {
-                        $fieldRules[] = 'mimes:' . $field['rules']['mimes'];
-                    }
+                    // Archivo único - validación condicional como image
+                    $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
+                        if ($value === null || $value === '') {
+                            return;
+                        }
+
+                        if (is_file($value) || is_object($value)) {
+                            $validator = Validator::make([$attribute => $value], [
+                                $attribute => ['file']
+                            ]);
+
+                            if ($validator->fails()) {
+                                $fail($validator->errors()->first($attribute));
+                            }
+
+                            if (isset($field['rules']['max'])) {
+                                $validator = Validator::make([$attribute => $value], [
+                                    $attribute => ['max:'.$field['rules']['max']]
+                                ]);
+
+                                if ($validator->fails()) {
+                                    $fail($validator->errors()->first($attribute));
+                                }
+                            }
+
+                            if (isset($field['rules']['mimes'])) {
+                                $validator = Validator::make([$attribute => $value], [
+                                    $attribute => ['mimes:'.$field['rules']['mimes']]
+                                ]);
+
+                                if ($validator->fails()) {
+                                    $fail($validator->errors()->first($attribute));
+                                }
+                            }
+                        }
+                    };
                 }
                 break;
         }
