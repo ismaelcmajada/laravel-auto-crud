@@ -333,6 +333,10 @@ const removeImage = (imageFieldName) => {
   formData[imageFieldName + "_edited"] = true
   imagePreview.value[imageFieldName] = null
   formData[imageFieldName] = null
+
+  nextTick(() => {
+    formRef.value?.validate()
+  })
 }
 
 const removeFile = (fileFieldName, index = null) => {
