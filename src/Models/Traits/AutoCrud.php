@@ -38,6 +38,8 @@ trait AutoCrud
                 $this->casts[$field['field']] = DateTimeWithUserTimezone::class . ':d-m-Y H:i';
             } elseif ($field['type'] === 'telephone') {
                 $this->casts[$field['field']] = 'string';
+            } elseif ($field['type'] === 'json') {
+                $this->casts[$field['field']] = 'array';
             }
         }
     }
