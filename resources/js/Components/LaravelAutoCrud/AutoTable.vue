@@ -332,6 +332,11 @@ const onCustomFieldsUpdated = () => {
 // Image carousel index per item (keyed by `${itemId}_${headerKey}`)
 const imageCarouselIndex = ref({})
 
+const getClampedIndex = (key, arrayLength) => {
+  const idx = imageCarouselIndex.value[key] || 0
+  return Math.min(idx, Math.max(arrayLength - 1, 0))
+}
+
 // Image dialog
 const showImageDialog = ref(false)
 const currentImageUrl = ref("")
@@ -731,15 +736,16 @@ watch(item, (value) => {
                       variant="text"
                       @click.stop="
                         imageCarouselIndex[`${listItem.id}_${header.key}`] =
-                          Math.max(
-                            (imageCarouselIndex[
-                              `${listItem.id}_${header.key}`
-                            ] || 0) - 1,
-                            0,
-                          )
+                          getClampedIndex(
+                            `${listItem.id}_${header.key}`,
+                            parseJsonArray(listItem[header.key]).length,
+                          ) - 1
                       "
                       :disabled="
-                        !imageCarouselIndex[`${listItem.id}_${header.key}`]
+                        getClampedIndex(
+                          `${listItem.id}_${header.key}`,
+                          parseJsonArray(listItem[header.key]).length,
+                        ) <= 0
                       "
                     >
                       <v-icon size="small">mdi-chevron-left</v-icon>
@@ -748,9 +754,10 @@ watch(item, (value) => {
                       <v-img
                         :src="`/laravel-auto-crud/${
                           parseJsonArray(listItem[header.key])[
-                            imageCarouselIndex[
-                              `${listItem.id}_${header.key}`
-                            ] || 0
+                            getClampedIndex(
+                              `${listItem.id}_${header.key}`,
+                              parseJsonArray(listItem[header.key]).length,
+                            )
                           ]
                         }`"
                         cover
@@ -758,15 +765,17 @@ watch(item, (value) => {
                           openImageDialog(
                             `/laravel-auto-crud/${
                               parseJsonArray(listItem[header.key])[
-                                imageCarouselIndex[
-                                  `${listItem.id}_${header.key}`
-                                ] || 0
+                                getClampedIndex(
+                                  `${listItem.id}_${header.key}`,
+                                  parseJsonArray(listItem[header.key]).length,
+                                )
                               ]
                             }`,
                             parseJsonArray(listItem[header.key])[
-                              imageCarouselIndex[
-                                `${listItem.id}_${header.key}`
-                              ] || 0
+                              getClampedIndex(
+                                `${listItem.id}_${header.key}`,
+                                parseJsonArray(listItem[header.key]).length,
+                              )
                             ],
                           )
                         "
@@ -780,30 +789,21 @@ watch(item, (value) => {
                       variant="text"
                       @click.stop="
                         imageCarouselIndex[`${listItem.id}_${header.key}`] =
-                          Math.min(
-                            (imageCarouselIndex[
-                              `${listItem.id}_${header.key}`
-                            ] || 0) + 1,
-                            parseJsonArray(listItem[header.key]).length - 1,
-                          )
+                          getClampedIndex(
+                            `${listItem.id}_${header.key}`,
+                            parseJsonArray(listItem[header.key]).length,
+                          ) + 1
                       "
                       :disabled="
-                        (imageCarouselIndex[`${listItem.id}_${header.key}`] ||
-                          0) >=
+                        getClampedIndex(
+                          `${listItem.id}_${header.key}`,
+                          parseJsonArray(listItem[header.key]).length,
+                        ) >=
                         parseJsonArray(listItem[header.key]).length - 1
                       "
                     >
                       <v-icon size="small">mdi-chevron-right</v-icon>
                     </v-btn>
-                    <span
-                      v-if="parseJsonArray(listItem[header.key]).length > 1"
-                      class="text-caption text-grey ml-1"
-                    >
-                      {{
-                        (imageCarouselIndex[`${listItem.id}_${header.key}`] ||
-                          0) + 1
-                      }}/{{ parseJsonArray(listItem[header.key]).length }}
-                    </span>
                   </div>
                 </template>
                 <!-- Imagen única -->
@@ -1148,13 +1148,18 @@ watch(item, (value) => {
                     size="x-small"
                     variant="text"
                     @click.stop="
-                      imageCarouselIndex[`${item.id}_${header.key}`] = Math.max(
-                        (imageCarouselIndex[`${item.id}_${header.key}`] || 0) -
-                          1,
-                        0,
-                      )
+                      imageCarouselIndex[`${item.id}_${header.key}`] =
+                        getClampedIndex(
+                          `${item.id}_${header.key}`,
+                          parseJsonArray(item[header.key]).length,
+                        ) - 1
                     "
-                    :disabled="!imageCarouselIndex[`${item.id}_${header.key}`]"
+                    :disabled="
+                      getClampedIndex(
+                        `${item.id}_${header.key}`,
+                        parseJsonArray(item[header.key]).length,
+                      ) <= 0
+                    "
                   >
                     <v-icon size="small">mdi-chevron-left</v-icon>
                   </v-btn>
@@ -1162,7 +1167,10 @@ watch(item, (value) => {
                     <v-img
                       :src="`/laravel-auto-crud/${
                         parseJsonArray(item[header.key])[
-                          imageCarouselIndex[`${item.id}_${header.key}`] || 0
+                          getClampedIndex(
+                            `${item.id}_${header.key}`,
+                            parseJsonArray(item[header.key]).length,
+                          )
                         ]
                       }`"
                       cover
@@ -1170,12 +1178,17 @@ watch(item, (value) => {
                         openImageDialog(
                           `/laravel-auto-crud/${
                             parseJsonArray(item[header.key])[
-                              imageCarouselIndex[`${item.id}_${header.key}`] ||
-                                0
+                              getClampedIndex(
+                                `${item.id}_${header.key}`,
+                                parseJsonArray(item[header.key]).length,
+                              )
                             ]
                           }`,
                           parseJsonArray(item[header.key])[
-                            imageCarouselIndex[`${item.id}_${header.key}`] || 0
+                            getClampedIndex(
+                              `${item.id}_${header.key}`,
+                              parseJsonArray(item[header.key]).length,
+                            )
                           ],
                         )
                       "
@@ -1189,27 +1202,22 @@ watch(item, (value) => {
                     size="x-small"
                     variant="text"
                     @click.stop="
-                      imageCarouselIndex[`${item.id}_${header.key}`] = Math.min(
-                        (imageCarouselIndex[`${item.id}_${header.key}`] || 0) +
-                          1,
-                        parseJsonArray(item[header.key]).length - 1,
-                      )
+                      imageCarouselIndex[`${item.id}_${header.key}`] =
+                        getClampedIndex(
+                          `${item.id}_${header.key}`,
+                          parseJsonArray(item[header.key]).length,
+                        ) + 1
                     "
                     :disabled="
-                      (imageCarouselIndex[`${item.id}_${header.key}`] || 0) >=
+                      getClampedIndex(
+                        `${item.id}_${header.key}`,
+                        parseJsonArray(item[header.key]).length,
+                      ) >=
                       parseJsonArray(item[header.key]).length - 1
                     "
                   >
                     <v-icon size="small">mdi-chevron-right</v-icon>
                   </v-btn>
-                  <span
-                    v-if="parseJsonArray(item[header.key]).length > 1"
-                    class="text-caption text-grey ml-1"
-                  >
-                    {{
-                      (imageCarouselIndex[`${item.id}_${header.key}`] || 0) + 1
-                    }}/{{ parseJsonArray(item[header.key]).length }}
-                  </span>
                 </div>
               </template>
               <!-- Imagen única -->
