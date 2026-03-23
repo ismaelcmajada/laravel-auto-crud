@@ -720,32 +720,37 @@ watch(item, (value) => {
               >
                 <!-- Múltiples imágenes (JSON array) -->
                 <template v-if="isJsonArray(listItem[header.key])">
-                  <v-avatar
-                    v-for="(imgPath, idx) in parseJsonArray(
-                      listItem[header.key],
-                    ).slice(0, 3)"
-                    :key="idx"
-                    size="40"
-                    class="mr-1"
+                  <v-carousel
+                    height="60"
+                    hide-delimiters
+                    :show-arrows="
+                      parseJsonArray(listItem[header.key]).length > 1
+                        ? 'hover'
+                        : false
+                    "
+                    class="rounded"
+                    style="max-width: 100px"
                   >
-                    <v-img
-                      :src="`/laravel-auto-crud/${imgPath}`"
-                      @click.stop="
-                        openImageDialog(
-                          `/laravel-auto-crud/${imgPath}`,
-                          imgPath,
-                        )
-                      "
-                      class="cursor-pointer"
-                    ></v-img>
-                  </v-avatar>
-                  <v-chip
-                    v-if="parseJsonArray(listItem[header.key]).length > 3"
-                    size="small"
-                    color="grey"
-                  >
-                    +{{ parseJsonArray(listItem[header.key]).length - 3 }}
-                  </v-chip>
+                    <v-carousel-item
+                      v-for="(imgPath, idx) in parseJsonArray(
+                        listItem[header.key],
+                      )"
+                      :key="idx"
+                    >
+                      <v-img
+                        :src="`/laravel-auto-crud/${imgPath}`"
+                        height="60"
+                        cover
+                        @click.stop="
+                          openImageDialog(
+                            `/laravel-auto-crud/${imgPath}`,
+                            imgPath,
+                          )
+                        "
+                        class="cursor-pointer"
+                      ></v-img>
+                    </v-carousel-item>
+                  </v-carousel>
                 </template>
                 <!-- Imagen única -->
                 <template v-else>
@@ -1082,28 +1087,36 @@ watch(item, (value) => {
             <template v-else-if="header.type === 'image' && item[header.key]">
               <!-- Múltiples imágenes (JSON array) -->
               <template v-if="isJsonArray(item[header.key])">
-                <v-img
-                  v-for="(imgPath, idx) in parseJsonArray(
-                    item[header.key],
-                  ).slice(0, 3)"
-                  :key="idx"
-                  :src="`/laravel-auto-crud/${imgPath}`"
-                  max-width="80"
-                  max-height="80"
-                  class="ma-1 cursor-pointer d-inline-block"
-                  @click="
-                    openImageDialog(`/laravel-auto-crud/${imgPath}`, imgPath)
+                <v-carousel
+                  height="80"
+                  hide-delimiters
+                  :show-arrows="
+                    parseJsonArray(item[header.key]).length > 1
+                      ? 'hover'
+                      : false
                   "
-                  :title="'Click para ampliar'"
-                ></v-img>
-                <v-chip
-                  v-if="parseJsonArray(item[header.key]).length > 3"
-                  size="small"
-                  class="ma-1"
-                  color="grey"
+                  class="rounded"
+                  style="max-width: 120px"
                 >
-                  +{{ parseJsonArray(item[header.key]).length - 3 }}
-                </v-chip>
+                  <v-carousel-item
+                    v-for="(imgPath, idx) in parseJsonArray(item[header.key])"
+                    :key="idx"
+                  >
+                    <v-img
+                      :src="`/laravel-auto-crud/${imgPath}`"
+                      height="80"
+                      cover
+                      @click="
+                        openImageDialog(
+                          `/laravel-auto-crud/${imgPath}`,
+                          imgPath,
+                        )
+                      "
+                      class="cursor-pointer"
+                      :title="'Click para ampliar'"
+                    ></v-img>
+                  </v-carousel-item>
+                </v-carousel>
               </template>
               <!-- Imagen única -->
               <template v-else>
