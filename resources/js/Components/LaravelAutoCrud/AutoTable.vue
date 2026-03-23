@@ -329,6 +329,9 @@ const onCustomFieldsUpdated = () => {
   loadItems()
 }
 
+// Image carousel index per item (keyed by `${itemId}_${headerKey}`)
+const imageCarouselIndex = ref({})
+
 // Image dialog
 const showImageDialog = ref(false)
 const currentImageUrl = ref("")
@@ -720,37 +723,88 @@ watch(item, (value) => {
               >
                 <!-- Múltiples imágenes (JSON array) -->
                 <template v-if="isJsonArray(listItem[header.key])">
-                  <v-carousel
-                    height="60"
-                    hide-delimiters
-                    :show-arrows="
-                      parseJsonArray(listItem[header.key]).length > 1
-                        ? 'hover'
-                        : false
-                    "
-                    class="rounded"
-                    style="max-width: 100px"
-                  >
-                    <v-carousel-item
-                      v-for="(imgPath, idx) in parseJsonArray(
-                        listItem[header.key],
-                      )"
-                      :key="idx"
+                  <div class="d-flex align-center justify-center">
+                    <v-btn
+                      v-if="parseJsonArray(listItem[header.key]).length > 1"
+                      icon
+                      size="x-small"
+                      variant="text"
+                      @click.stop="
+                        imageCarouselIndex[`${listItem.id}_${header.key}`] =
+                          Math.max(
+                            (imageCarouselIndex[
+                              `${listItem.id}_${header.key}`
+                            ] || 0) - 1,
+                            0,
+                          )
+                      "
+                      :disabled="
+                        !imageCarouselIndex[`${listItem.id}_${header.key}`]
+                      "
                     >
+                      <v-icon size="small">mdi-chevron-left</v-icon>
+                    </v-btn>
+                    <v-avatar size="50" class="mx-1 rounded">
                       <v-img
-                        :src="`/laravel-auto-crud/${imgPath}`"
-                        height="60"
+                        :src="`/laravel-auto-crud/${
+                          parseJsonArray(listItem[header.key])[
+                            imageCarouselIndex[
+                              `${listItem.id}_${header.key}`
+                            ] || 0
+                          ]
+                        }`"
                         cover
                         @click.stop="
                           openImageDialog(
-                            `/laravel-auto-crud/${imgPath}`,
-                            imgPath,
+                            `/laravel-auto-crud/${
+                              parseJsonArray(listItem[header.key])[
+                                imageCarouselIndex[
+                                  `${listItem.id}_${header.key}`
+                                ] || 0
+                              ]
+                            }`,
+                            parseJsonArray(listItem[header.key])[
+                              imageCarouselIndex[
+                                `${listItem.id}_${header.key}`
+                              ] || 0
+                            ],
                           )
                         "
                         class="cursor-pointer"
                       ></v-img>
-                    </v-carousel-item>
-                  </v-carousel>
+                    </v-avatar>
+                    <v-btn
+                      v-if="parseJsonArray(listItem[header.key]).length > 1"
+                      icon
+                      size="x-small"
+                      variant="text"
+                      @click.stop="
+                        imageCarouselIndex[`${listItem.id}_${header.key}`] =
+                          Math.min(
+                            (imageCarouselIndex[
+                              `${listItem.id}_${header.key}`
+                            ] || 0) + 1,
+                            parseJsonArray(listItem[header.key]).length - 1,
+                          )
+                      "
+                      :disabled="
+                        (imageCarouselIndex[`${listItem.id}_${header.key}`] ||
+                          0) >=
+                        parseJsonArray(listItem[header.key]).length - 1
+                      "
+                    >
+                      <v-icon size="small">mdi-chevron-right</v-icon>
+                    </v-btn>
+                    <span
+                      v-if="parseJsonArray(listItem[header.key]).length > 1"
+                      class="text-caption text-grey ml-1"
+                    >
+                      {{
+                        (imageCarouselIndex[`${listItem.id}_${header.key}`] ||
+                          0) + 1
+                      }}/{{ parseJsonArray(listItem[header.key]).length }}
+                    </span>
+                  </div>
                 </template>
                 <!-- Imagen única -->
                 <template v-else>
@@ -1087,36 +1141,76 @@ watch(item, (value) => {
             <template v-else-if="header.type === 'image' && item[header.key]">
               <!-- Múltiples imágenes (JSON array) -->
               <template v-if="isJsonArray(item[header.key])">
-                <v-carousel
-                  height="80"
-                  hide-delimiters
-                  :show-arrows="
-                    parseJsonArray(item[header.key]).length > 1
-                      ? 'hover'
-                      : false
-                  "
-                  class="rounded"
-                  style="max-width: 120px"
-                >
-                  <v-carousel-item
-                    v-for="(imgPath, idx) in parseJsonArray(item[header.key])"
-                    :key="idx"
+                <div class="d-flex align-center justify-center">
+                  <v-btn
+                    v-if="parseJsonArray(item[header.key]).length > 1"
+                    icon
+                    size="x-small"
+                    variant="text"
+                    @click.stop="
+                      imageCarouselIndex[`${item.id}_${header.key}`] = Math.max(
+                        (imageCarouselIndex[`${item.id}_${header.key}`] || 0) -
+                          1,
+                        0,
+                      )
+                    "
+                    :disabled="!imageCarouselIndex[`${item.id}_${header.key}`]"
                   >
+                    <v-icon size="small">mdi-chevron-left</v-icon>
+                  </v-btn>
+                  <v-avatar size="60" class="mx-1 rounded">
                     <v-img
-                      :src="`/laravel-auto-crud/${imgPath}`"
-                      height="80"
+                      :src="`/laravel-auto-crud/${
+                        parseJsonArray(item[header.key])[
+                          imageCarouselIndex[`${item.id}_${header.key}`] || 0
+                        ]
+                      }`"
                       cover
-                      @click="
+                      @click.stop="
                         openImageDialog(
-                          `/laravel-auto-crud/${imgPath}`,
-                          imgPath,
+                          `/laravel-auto-crud/${
+                            parseJsonArray(item[header.key])[
+                              imageCarouselIndex[`${item.id}_${header.key}`] ||
+                                0
+                            ]
+                          }`,
+                          parseJsonArray(item[header.key])[
+                            imageCarouselIndex[`${item.id}_${header.key}`] || 0
+                          ],
                         )
                       "
                       class="cursor-pointer"
                       :title="'Click para ampliar'"
                     ></v-img>
-                  </v-carousel-item>
-                </v-carousel>
+                  </v-avatar>
+                  <v-btn
+                    v-if="parseJsonArray(item[header.key]).length > 1"
+                    icon
+                    size="x-small"
+                    variant="text"
+                    @click.stop="
+                      imageCarouselIndex[`${item.id}_${header.key}`] = Math.min(
+                        (imageCarouselIndex[`${item.id}_${header.key}`] || 0) +
+                          1,
+                        parseJsonArray(item[header.key]).length - 1,
+                      )
+                    "
+                    :disabled="
+                      (imageCarouselIndex[`${item.id}_${header.key}`] || 0) >=
+                      parseJsonArray(item[header.key]).length - 1
+                    "
+                  >
+                    <v-icon size="small">mdi-chevron-right</v-icon>
+                  </v-btn>
+                  <span
+                    v-if="parseJsonArray(item[header.key]).length > 1"
+                    class="text-caption text-grey ml-1"
+                  >
+                    {{
+                      (imageCarouselIndex[`${item.id}_${header.key}`] || 0) + 1
+                    }}/{{ parseJsonArray(item[header.key]).length }}
+                  </span>
+                </div>
               </template>
               <!-- Imagen única -->
               <template v-else>
