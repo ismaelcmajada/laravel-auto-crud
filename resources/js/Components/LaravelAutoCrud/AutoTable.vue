@@ -718,18 +718,50 @@ watch(item, (value) => {
               <template
                 v-else-if="header.type === 'image' && listItem[header.key]"
               >
-                <v-avatar size="40">
-                  <v-img
-                    :src="`/laravel-auto-crud/${listItem[header.key]}`"
-                    @click.stop="
-                      openImageDialog(
-                        `/laravel-auto-crud/${listItem[header.key]}`,
-                        listItem[header.key],
-                      )
-                    "
-                    class="cursor-pointer"
-                  ></v-img>
-                </v-avatar>
+                <!-- Múltiples imágenes (JSON array) -->
+                <template v-if="isJsonArray(listItem[header.key])">
+                  <v-avatar
+                    v-for="(imgPath, idx) in parseJsonArray(
+                      listItem[header.key],
+                    ).slice(0, 3)"
+                    :key="idx"
+                    size="40"
+                    class="mr-1"
+                  >
+                    <v-img
+                      :src="`/laravel-auto-crud/${imgPath}`"
+                      @click.stop="
+                        openImageDialog(
+                          `/laravel-auto-crud/${imgPath}`,
+                          imgPath,
+                        )
+                      "
+                      class="cursor-pointer"
+                    ></v-img>
+                  </v-avatar>
+                  <v-chip
+                    v-if="parseJsonArray(listItem[header.key]).length > 3"
+                    size="small"
+                    color="grey"
+                  >
+                    +{{ parseJsonArray(listItem[header.key]).length - 3 }}
+                  </v-chip>
+                </template>
+                <!-- Imagen única -->
+                <template v-else>
+                  <v-avatar size="40">
+                    <v-img
+                      :src="`/laravel-auto-crud/${listItem[header.key]}`"
+                      @click.stop="
+                        openImageDialog(
+                          `/laravel-auto-crud/${listItem[header.key]}`,
+                          listItem[header.key],
+                        )
+                      "
+                      class="cursor-pointer"
+                    ></v-img>
+                  </v-avatar>
+                </template>
               </template>
               <!-- Si el header tiene type file -->
               <template
@@ -1047,20 +1079,48 @@ watch(item, (value) => {
             </template>
 
             <!-- Si el header tiene type image -->
-            <template v-else-if="header.type === 'image'">
-              <v-img
-                :src="`/laravel-auto-crud/${item[header.key]}`"
-                max-width="150"
-                max-height="150"
-                class="mx-auto cursor-pointer"
-                @click="
-                  openImageDialog(
-                    `/laravel-auto-crud/${item[header.key]}`,
+            <template v-else-if="header.type === 'image' && item[header.key]">
+              <!-- Múltiples imágenes (JSON array) -->
+              <template v-if="isJsonArray(item[header.key])">
+                <v-img
+                  v-for="(imgPath, idx) in parseJsonArray(
                     item[header.key],
-                  )
-                "
-                :title="'Click para ampliar'"
-              ></v-img>
+                  ).slice(0, 3)"
+                  :key="idx"
+                  :src="`/laravel-auto-crud/${imgPath}`"
+                  max-width="80"
+                  max-height="80"
+                  class="ma-1 cursor-pointer d-inline-block"
+                  @click="
+                    openImageDialog(`/laravel-auto-crud/${imgPath}`, imgPath)
+                  "
+                  :title="'Click para ampliar'"
+                ></v-img>
+                <v-chip
+                  v-if="parseJsonArray(item[header.key]).length > 3"
+                  size="small"
+                  class="ma-1"
+                  color="grey"
+                >
+                  +{{ parseJsonArray(item[header.key]).length - 3 }}
+                </v-chip>
+              </template>
+              <!-- Imagen única -->
+              <template v-else>
+                <v-img
+                  :src="`/laravel-auto-crud/${item[header.key]}`"
+                  max-width="150"
+                  max-height="150"
+                  class="mx-auto cursor-pointer"
+                  @click="
+                    openImageDialog(
+                      `/laravel-auto-crud/${item[header.key]}`,
+                      item[header.key],
+                    )
+                  "
+                  :title="'Click para ampliar'"
+                ></v-img>
+              </template>
             </template>
 
             <!-- Si el header tiene type file -->

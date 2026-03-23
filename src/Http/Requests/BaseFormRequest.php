@@ -108,46 +108,81 @@ abstract class BaseFormRequest extends FormRequest
                 $fieldRules[] = 'digits_between:8,15';
                 break;
             case 'image':
-                // Solo aplica las reglas de imagen si se envía un archivo
-                $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
-                    // Si no se envió nada o es null, no validamos como imagen
-                    if ($value === null || $value === '') {
-                        return;
-                    }
-                    
-                    // Si es un archivo, validamos con las reglas de imagen
-                    if (is_file($value) || is_object($value)) {
-                        $validator = Validator::make([$attribute => $value], [
-                            $attribute => ['image']
-                        ]);
-                        
-                        if ($validator->fails()) {
-                            $fail($validator->errors()->first($attribute));
+                if (isset($field['multiple']) && $field['multiple']) {
+                    // Múltiples imágenes - validación condicional
+                    $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
+                        // Si no hay valor o es null, permitir (las imágenes existentes se mantienen)
+                        if ($value === null || $value === '') {
+                            return;
                         }
                         
-                        // Validar max si está definido
-                        if (isset($field['rules']['max'])) {
+                        // Si no es array, fallar
+                        if (!is_array($value)) {
+                            $fail("El campo {$attribute} debe ser un conjunto de imágenes.");
+                            return;
+                        }
+                        
+                        foreach ($value as $index => $file) {
+                            if (!is_file($file) && !is_object($file)) {
+                                continue;
+                            }
+                            $rules = ['image'];
+                            if (isset($field['rules']['max'])) {
+                                $rules[] = 'max:' . $field['rules']['max'];
+                            }
+                            if (isset($field['rules']['mimes'])) {
+                                $rules[] = 'mimes:' . $field['rules']['mimes'];
+                            }
+                            $validator = Validator::make([$attribute => $file], [
+                                $attribute => $rules
+                            ]);
+                            if ($validator->fails()) {
+                                $fail("Imagen {$index}: " . $validator->errors()->first($attribute));
+                            }
+                        }
+                    };
+                } else {
+                    // Solo aplica las reglas de imagen si se envía un archivo
+                    $fieldRules[] = function ($attribute, $value, $fail) use ($field) {
+                        // Si no se envió nada o es null, no validamos como imagen
+                        if ($value === null || $value === '') {
+                            return;
+                        }
+                        
+                        // Si es un archivo, validamos con las reglas de imagen
+                        if (is_file($value) || is_object($value)) {
                             $validator = Validator::make([$attribute => $value], [
-                                $attribute => ['max:'.$field['rules']['max']]
+                                $attribute => ['image']
                             ]);
                             
                             if ($validator->fails()) {
                                 $fail($validator->errors()->first($attribute));
                             }
-                        }
-                        
-                        // Validar mimes si está definido
-                        if (isset($field['rules']['mimes'])) {
-                            $validator = Validator::make([$attribute => $value], [
-                                $attribute => ['mimes:'.$field['rules']['mimes']]
-                            ]);
                             
-                            if ($validator->fails()) {
-                                $fail($validator->errors()->first($attribute));
+                            // Validar max si está definido
+                            if (isset($field['rules']['max'])) {
+                                $validator = Validator::make([$attribute => $value], [
+                                    $attribute => ['max:'.$field['rules']['max']]
+                                ]);
+                                
+                                if ($validator->fails()) {
+                                    $fail($validator->errors()->first($attribute));
+                                }
+                            }
+                            
+                            // Validar mimes si está definido
+                            if (isset($field['rules']['mimes'])) {
+                                $validator = Validator::make([$attribute => $value], [
+                                    $attribute => ['mimes:'.$field['rules']['mimes']]
+                                ]);
+                                
+                                if ($validator->fails()) {
+                                    $fail($validator->errors()->first($attribute));
+                                }
                             }
                         }
-                    }
-                };
+                    };
+                }
                 break;
             case 'file':
                 if (isset($field['multiple']) && $field['multiple']) {
