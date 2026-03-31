@@ -401,6 +401,20 @@ watch(item, (value) => {
       :model="dynamicModel"
       @formChange="emit('formChange', $event)"
     >
+      <template
+        #header-actions="{
+          item: dialogItem,
+          type: dialogType,
+          model: dialogModel,
+        }"
+      >
+        <slot
+          name="auto-form-dialog.header-actions"
+          :item="dialogItem"
+          :type="dialogType"
+          :model="dialogModel"
+        ></slot>
+      </template>
       <template #prepend>
         <slot
           name="auto-form-dialog.prepend"
