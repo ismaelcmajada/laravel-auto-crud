@@ -34,6 +34,19 @@ class AutoCrudServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations/create_custom_fields_tables.php.stub' => database_path('migrations/' . date('Y_m_d_His') . '_create_custom_fields_tables.php'),
         ], 'laravel-auto-crud-migrations');
+
+        // Publish the opencode / Claude-style agent skill so AI agents working
+        // on the host project can discover and follow the package conventions.
+        // Published into `.opencode/skills/laravel-auto-crud/SKILL.md` at the
+        // project root by default, plus a copy under `.claude/skills/` for
+        // tooling that expects the Claude location.
+        $this->publishes([
+            __DIR__ . '/../skills/laravel-auto-crud/SKILL.md' => base_path('.opencode/skills/laravel-auto-crud/SKILL.md'),
+        ], 'laravel-auto-crud-skill');
+
+        $this->publishes([
+            __DIR__ . '/../skills/laravel-auto-crud/SKILL.md' => base_path('.claude/skills/laravel-auto-crud/SKILL.md'),
+        ], 'laravel-auto-crud-skill-claude');
     }
 
     public function register()
