@@ -41,11 +41,11 @@ class AutoCrudServiceProvider extends ServiceProvider
         // project root by default, plus a copy under `.claude/skills/` for
         // tooling that expects the Claude location.
         $this->publishes([
-            __DIR__ . '/../skills/laravel-auto-crud/SKILL.md' => base_path('.opencode/skills/laravel-auto-crud/SKILL.md'),
+            __DIR__ . '/../skills/laravel-auto-crud' => base_path('.opencode/skills/laravel-auto-crud'),
         ], 'laravel-auto-crud-skill');
 
         $this->publishes([
-            __DIR__ . '/../skills/laravel-auto-crud/SKILL.md' => base_path('.claude/skills/laravel-auto-crud/SKILL.md'),
+            __DIR__ . '/../skills/laravel-auto-crud' => base_path('.claude/skills/laravel-auto-crud'),
         ], 'laravel-auto-crud-skill-claude');
     }
 
