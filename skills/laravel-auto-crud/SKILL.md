@@ -5,202 +5,191 @@ description: Use this skill whenever you need to add, modify, or scaffold a CRUD
 
 # laravel-auto-crud
 
-Skill for working with the `ismaelcmajada/laravel-auto-crud` package. The package autogenerates the entire CRUD pipeline (routes, controllers, FormRequests, validation, table/form payloads, autocomplete endpoints, file/image handling, calendar events, soft-delete management, history records, pivot management, etc.) from a single model that uses the `AutoCrud` trait. Most of the plumbing is already done — your job is almost always limited to:
+Skill for working with the `ismaelcmajada/laravel-auto-crud` package. The package autogenerates the entire CRUD pipeline (routes, controllers, FormRequests, validation, table/form payloads, autocomplete, files/images, calendar, soft-delete, history, pivots, …) from a single model that uses the `AutoCrud` trait.
 
-1. Writing/adjusting the migration.
-2. Writing the model with `getFields()`, optional `$externalRelations`, `$includes`, hooks, custom rules and search scopes.
-3. Sharing the model in `HandleInertiaRequests::share()`.
-4. Creating the Inertia page that renders `<auto-table>` (and/or `<auto-form-dialog>`).
-
-Everything else is handled by the package.
+Your job is almost always limited to: **migration → model with `getFields()` → share `models` in Inertia → Inertia page route → Vue page with `<auto-table>`**. Nothing else.
 
 ---
 
-## ⚠️ HARD RULES — read first
+## Mandatory decision rules
 
-### 1. Published assets are READ-ONLY
+These rules override any other suggestion (including examples in package docs):
 
-When the user runs:
+1. **Never edit published package files.** Anything under `resources/js/Components/LaravelAutoCrud/`, `resources/js/Composables/LaravelAutoCrud/`, `resources/js/Utils/LaravelAutoCrud/`, the published `config/laravel-auto-crud.php` and the published `..._create_custom_fields_tables.php` migration are READ-ONLY. They are overwritten by `vendor:publish --force`. Customise via props, slots, or wrapper components — never by patching them.
+2. **Never create CRUD controllers, FormRequests or resource routes for AutoCrud models.** The package already exposes `/laravel-auto-crud/{model}/...` (index, store, update, destroy, restore, permanent, export-excel, getItem, all, load-items, load-autocomplete-items, load-calendar-events, pivot, bind, unbind).
+3. **Always define CRUD behavior from the model**, using `AutoCrud` + `getFields()` (+ `$externalRelations`, hooks, `getCustomRules()`, `scopeSearchXxx`). Do not reimplement what the trait already does.
+4. **Always share the model config through `HandleInertiaRequests`** by exposing `app('models')` (auto-discovered). Adding a new model under `app/Models/**` with the `AutoCrud` trait is enough — no manual registration.
+5. **`select` field `options` must be a flat array of strings.** Associative arrays (`['a' => 'A']`) and arrays of objects (`[['value' => ..., 'label' => ...]]`) are NOT supported. The stored string is the displayed string.
 
-```bash
-php artisan vendor:publish --tag=laravel-auto-crud --force
-```
+---
 
-…the package copies these directories into the host project:
+## Golden path — copy this pattern when in doubt
 
-- `resources/js/Components/LaravelAutoCrud/` (AutoTable.vue, AutoForm.vue, AutoFormDialog.vue, AutoCalendar.vue, AutocompleteServer.vue, AutoExternalRelation.vue, CustomFieldsManager.vue, DestroyDialog.vue, DestroyPermanentDialog.vue, ExpandableList.vue, ExpandableText.vue, HistoryDialog.vue, ImageDialog.vue, LoadingOverlay.vue, RestoreDialog.vue, VDatetimePicker.vue)
-- `resources/js/Utils/LaravelAutoCrud/` (arrays.js, autocompleteUtils.js, datatableUtils.js, dates.js, excel.js, rules.js, url.js)
-- `resources/js/Composables/LaravelAutoCrud/` (useDialogs.js, useTableServer.js)
-
-**You MUST NEVER edit, refactor, "improve", reformat or patch any file inside those three folders.** They are the package's distribution artefacts; any local change will be lost the next time the user re-publishes with `--force` and any bug-fix you add there is undefined behaviour. The same applies to:
-
-- The published config file `config/laravel-auto-crud.php`.
-- The published migration `..._create_custom_fields_tables.php`.
-
-If you genuinely need different behaviour, **wrap or extend** from outside (custom Vue page that imports the published component, custom slot, custom prop, custom field rendering via the `#field.<name>` slot, custom controller, etc.) — do NOT modify the published source.
-
-### 2. `select` field options: FLAT array of strings — NEVER associative
-
-For any field with `'type' => 'select'`, the `options` key **must be a plain (numerically indexed) array of strings**:
+### Migration
 
 ```php
-// ✅ CORRECT
-[
-    'name'    => 'Status',
-    'field'   => 'status',
-    'type'    => 'select',
-    'options' => ['pending', 'confirmed', 'cancelled'],
-    'form'    => true,
-    'table'   => true,
-],
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->decimal('price', 10, 2);
+    $table->string('status');
+    $table->foreignId('category_id')->constrained();
+    $table->softDeletes();
+    $table->timestamps();
+});
 ```
+
+### Model
 
 ```php
-// ❌ WRONG — associative arrays are NOT supported
-'options' => ['pending' => 'Pending', 'confirmed' => 'Confirmed'],
+use Ismaelcmajada\LaravelAutoCrud\Models\Traits\AutoCrud;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-// ❌ WRONG — arrays of objects/labels are NOT supported
-'options' => [['value' => 'pending', 'label' => 'Pending']],
+class Product extends Model
+{
+    use AutoCrud, SoftDeletes;
+
+    protected static function getFields(): array
+    {
+        return [
+            [
+                'name'  => 'Name',
+                'field' => 'name',
+                'type'  => 'string',
+                'table' => true,
+                'form'  => true,
+                'rules' => ['required' => true],
+            ],
+            [
+                'name'  => 'Price',
+                'field' => 'price',
+                'type'  => 'decimal',
+                'table' => true,
+                'form'  => true,
+                'rules' => ['required' => true],
+            ],
+            [
+                'name'    => 'Status',
+                'field'   => 'status',
+                'type'    => 'select',
+                'options' => ['pending', 'confirmed', 'cancelled'],
+                'table'   => true,
+                'form'    => true,
+            ],
+            [
+                'name'      => 'Category',
+                'field'     => 'category_id',
+                'type'      => 'combobox',
+                'endPoint'  => '/laravel-auto-crud/category',
+                'itemTitle' => 'name',
+                'table'     => true,
+                'form'      => true,
+                'relation'  => [
+                    'model'    => Category::class,
+                    'relation' => 'category',
+                    'tableKey' => '{name}',
+                    'formKey'  => '{name}',
+                ],
+            ],
+        ];
+    }
+}
 ```
 
-The string stored in the database **is** the value shown to the user. If the user wants a different label, that label must be the value itself (translate at the rendering layer via a custom slot if needed). Some examples in the published `docs/examples.md` show associative arrays — **those examples are wrong; ignore them and follow this rule.**
-
----
-
-## Things the package already does — DO NOT re-implement or "verify"
-
-When working on a model that uses `AutoCrud`, do **not** add the following (it is wasted work and often breaks the magic):
-
-| The package handles automatically                                                                                                                                                                                                                                                                                                             | Don't do this                                                                                                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------- |
-| **Auto-discovers every model in `app/Models/**`that uses the`AutoCrud`trait** via`ModelScanServiceProvider`and binds them as the`models`container singleton — an array keyed by`Str::lower(class_basename($model))`whose value is`Model::getModel()` (the full payload: fields, rules, relationships, endpoints, table headers, form fields). | Don't manually call `Foo::getModelConfig()` / `Foo::getModel()` per model — just inject `app('models')` (or resolve `'models'`) and pass it to Inertia. Adding a new model to `app/Models/` is enough; no registration code. |
-| Fills `$fillable` from `getFields()`                                                                                                                                                                                                                                                                                                          | Don't declare `$fillable` for fields already in `getFields()`                                                                                                                                                                |
-| Builds `$casts` from each field's `type` (`boolean`, `date`, `datetime`, `password→hashed`, etc.)                                                                                                                                                                                                                                             | Don't add casts for those fields                                                                                                                                                                                             |
-| Adds `password` fields to `$hidden`                                                                                                                                                                                                                                                                                                           | Don't add them manually                                                                                                                                                                                                      |
-| Registers all CRUD routes under `/laravel-auto-crud/{model}/...` (index/store/update/destroy/restore/permanent/export-excel/getItem/all/load-items/load-autocomplete-items/load-calendar-events/pivot/bind/unbind)                                                                                                                            | Don't write resource routes, controllers or `Route::apiResource` for the model                                                                                                                                               |
-| Provides controllers (`AutoCrudController`, `AutoTableController`, `AutoCompleteController`, `CalendarController`, `ImageController`, `FileController`, `CustomFieldDefinitionController`, `SessionController`)                                                                                                                               | Don't create your own CRUD controller for the model                                                                                                                                                                          |
-| Generates a `DynamicFormRequest` with the rules built from each field's `rules` + `getCustomRules()`                                                                                                                                                                                                                                          | Don't create a FormRequest for the model                                                                                                                                                                                     |
-| Resolves relationships dynamically via `__call` from each field's `relation` config and from `$externalRelations`                                                                                                                                                                                                                             | Don't write `belongsTo` / `morphTo` / `belongsToMany` methods for relationships already declared in `getFields()` or `$externalRelations`                                                                                    |
-| Applies `withTrashed()` to related models that use `SoftDeletes`                                                                                                                                                                                                                                                                              | Don't add `->withTrashed()` manually                                                                                                                                                                                         |
-| Applies `withPivot([...])` from `pivotFields`                                                                                                                                                                                                                                                                                                 | Don't add it manually                                                                                                                                                                                                        |
-| Generates and exposes endpoints (`/laravel-auto-crud/{model}/...`) for every model and pivot                                                                                                                                                                                                                                                  | Don't hard-code endpoints in Vue — read them from `model.endpoint` (already in the payload)                                                                                                                                  |
-| Builds `tableHeaders`, `formFields`, `tableKey` / `formKey` resolution                                                                                                                                                                                                                                                                        | Don't compute headers manually in the page                                                                                                                                                                                   |
-| Stores public/private images and files (encrypts private files with `Crypt`) under `storage/{public                                                                                                                                                                                                                                           | private}/{images                                                                                                                                                                                                             | files}/{model}/{field}/{id}` | Don't handle file uploads or storage paths yourself |
-| Records history (morphMany `records`) and exposes `HistoryDialog`                                                                                                                                                                                                                                                                             | Don't build an audit trail for the model                                                                                                                                                                                     |
-| Honours `$forbiddenActions` per role through the `checkForbiddenActions` middleware                                                                                                                                                                                                                                                           | Don't gate destroy/restore actions in your own code                                                                                                                                                                          |
-| Soft-delete-aware destroy / `destroyPermanent` / `restore` flows + UI dialogs                                                                                                                                                                                                                                                                 | Don't write delete/restore handlers                                                                                                                                                                                          |
-| Excel export endpoint and button                                                                                                                                                                                                                                                                                                              | Don't implement export                                                                                                                                                                                                       |
-| Inertia flash for `data` / `message` after each action                                                                                                                                                                                                                                                                                        | Don't manually emit success toasts after CRUD actions                                                                                                                                                                        |
-| Server-side pagination, sorting, multi-column filtering                                                                                                                                                                                                                                                                                       | Don't paginate manually                                                                                                                                                                                                      |
-
-If the user asks you to "create a controller / FormRequest / route for model X that uses AutoCrud" — push back briefly: it is not needed. Only create those if the requirement is something explicitly outside the package (e.g. a non-CRUD action, a webhook, a public API endpoint, etc.).
-
----
-
-## Required workflow for adding a new CRUD
-
-1. **Migration** — only thing the package cannot infer. Add the columns matching every `field` in `getFields()` (plus `softDeletes()` if you'll use them, plus the foreign keys for `belongsTo`/`morphs`, plus pivot tables for `BelongsToMany`).
-
-2. **Model** — `use AutoCrud, SoftDeletes;` and implement at minimum `protected static function getFields(): array`. Add `$externalRelations`, `$includes`, `$forbiddenActions`, `$calendarFields`, hooks, `getCustomRules()` and `scopeSearchXxx` only if needed.
-
-3. **Inertia share** — share the auto-discovered `models` singleton (the package's `ModelScanServiceProvider` already scans `app/Models/**` and registers every model that uses the `AutoCrud` trait). You do **not** need to list models one by one — just expose the whole bag plus the flash payload in `HandleInertiaRequests::share()`:
-
-   ```php
-   public function share(Request $request): array
-   {
-       return array_merge(parent::share($request), [
-           'models' => app('models'),       // auto-discovered, keyed by lowercase class basename
-           'flash'  => [
-               'data'    => fn () => $request->session()->get('data'),
-               'message' => fn () => $request->session()->get('message'),
-           ],
-       ]);
-   }
-   ```
-
-   Adding a new `App\Models\Foo` that uses `AutoCrud` automatically makes `page.props.models.foo` available on the frontend — no code change in the share method, no manual `Foo::getModelConfig()` call.
-
-4. **Page route** — a single Inertia render route, e.g. `Route::get('/products', fn () => Inertia::render('Products'))->name('products');`. Do NOT add CRUD verbs.
-
-5. **Vue page** — render the published component with the model from props:
-
-   ```vue
-   <script setup>
-   import AutoTable from "@/Components/LaravelAutoCrud/AutoTable.vue"
-   import { usePage } from "@inertiajs/vue3"
-   const model = usePage().props.models.product
-   </script>
-   <template>
-     <auto-table title="Products" :model="model" />
-   </template>
-   ```
-
----
-
-## Field definition reference (concise)
-
-Every entry in `getFields()` is an associative array. Required keys: `name`, `field`, `type`. Common keys: `table`, `form`, `rules`, `default`, `onlyUpdate`, `hidden`, `options`, `endPoint`, `itemTitle`, `comboField`, `relation`, `public`.
-
-**Types:** `string`, `number`, `decimal`, `boolean`, `password`, `text`, `telephone`, `date`, `datetime`, `select`, `combobox`, `image`, `file`.
-
-**Type-specific notes:**
-
-- `select` → requires `options` as a **flat array of strings** (see hard rule above).
-- `combobox` → requires `endPoint` (string, the autocomplete endpoint, normally `model.endpoint` of another AutoCrud model) and `itemTitle` (the field of the related model to display).
-- `image` / `file` → optional `public` (default `true`). Private files are encrypted automatically.
-- `password` → automatically hashed and hidden.
-- `date` / `datetime` → cast with user-timezone casts automatically.
-
-**Validation in `rules`:** `'required' => true`, `'unique' => true`, `'custom' => ['rule_name', ...]` (each name maps to a closure in `getCustomRules()` with signature `function ($attribute, $value, $fail, $request)`; access full payload through `$request->getData()`).
-
-**BelongsTo / MorphTo** — declare via the field's `relation` key (don't write the Eloquent method):
+### Inertia share (once per project)
 
 ```php
-'relation' => [
-    'model'    => User::class,    // omit / null for morphTo
-    'relation' => 'user',
-    'tableKey' => '{name} ({email})',
-    'formKey'  => '{name}',
-    // morphTo only:
-    'polymorphic' => true,
-    'morphType'   => 'commentable_type',
-],
+public function share(Request $request): array
+{
+    return array_merge(parent::share($request), [
+        'models' => app('models'),
+        'flash'  => [
+            'data'    => fn () => $request->session()->get('data'),
+            'message' => fn () => $request->session()->get('message'),
+        ],
+    ]);
+}
 ```
 
-**HasMany / BelongsToMany** — declare via `protected static $externalRelations = [...]`. For `hasMany` set `'type' => 'hasMany'` and `foreignKey`. For `belongsToMany` provide `pivotTable`, `foreignKey`, `relatedKey`, optional `pivotModel`, optional `pivotFields` (which themselves follow the same field-definition shape).
+### Page route
+
+```php
+Route::get('/products', fn () => Inertia::render('Products'))->name('products');
+```
+
+### Vue page
+
+```vue
+<script setup>
+import AutoTable from "@/Components/LaravelAutoCrud/AutoTable.vue"
+import { usePage } from "@inertiajs/vue3"
+const model = usePage().props.models.product
+</script>
+
+<template>
+  <auto-table title="Products" :model="model" />
+</template>
+```
+
+That's the entire CRUD. **Stop here unless something is genuinely outside the package scope.**
 
 ---
 
-## Frontend usage reminders
+## Recipes — pick the closest one
 
-- Only **import** the published components from `@/Components/LaravelAutoCrud/...` — never edit them.
-- Customise behaviour through **props and slots** (the components expose a rich slot tree: `#table.actions.prepend`, `#table.actions`, `#table.actions.append`, `#item.<columnKey>`, `#item.actions(.prepend|.append)`, `#auto-form-dialog.auto-form.field.<fieldName>`, `#auto-form-dialog.auto-form.prepend|append|after-save`, `#auto-external-relation.<relation>.actions`, etc.). When the user wants a "custom column" or "custom field rendering", use a slot — do not patch the component.
-- The model object (`page.props.models.<name>`) already contains `endpoint`, `tableHeaders`, `formFields`, `rules`, relationships and all metadata. Read from it; don't reconstruct.
-- For pages that only need a dialog, import `AutoFormDialog.vue` and pass either `:model="model"` or `model-name="App\\Models\\Foo"`.
+| User asks for…                               | Recipe                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| New CRUD model                               | [`references/recipes.md` → Create a CRUD](references/recipes.md#create-a-crud)         |
+| `belongsTo` / `morphTo`                      | [`references/relations.md`](references/relations.md#belongsto--morphto)                |
+| `hasMany` / `belongsToMany` (+ pivot fields) | [`references/relations.md`](references/relations.md#hasmany--belongstomany)            |
+| Custom validation (cross-field)              | [`references/recipes.md` → Custom validation](references/recipes.md#custom-validation) |
+| Image / file fields                          | [`references/recipes.md` → Files & images](references/recipes.md#files--images)        |
+| Calendar view                                | [`references/recipes.md` → Calendar](references/recipes.md#calendar)                   |
+| Custom column / custom form field rendering  | [`references/frontend-slots.md`](references/frontend-slots.md)                         |
+| Building a fully custom frontend / dashboard | [`references/model-payload.md`](references/model-payload.md)                           |
+| Forbidden actions per role                   | [`references/recipes.md` → Forbidden actions](references/recipes.md#forbidden-actions) |
+| Custom search filter / scope                 | [`references/recipes.md` → Search scopes](references/recipes.md#search-scopes)         |
+| Lifecycle side-effects (email, audit, …)     | [`references/recipes.md` → Hooks](references/recipes.md#hooks)                         |
+| Field types / keys reference                 | [`references/fields.md`](references/fields.md)                                         |
+| Something feels wrong / "should I do this?"  | [`references/anti-patterns.md`](references/anti-patterns.md)                           |
 
----
-
-## Decision checklist when the user asks for "a CRUD for X"
-
-1. Does X need a database table? → write the migration.
-2. Does the model exist? → create `App\Models\X` with `use AutoCrud[, SoftDeletes];` and `getFields()`.
-3. Are there foreign keys? → put them in `getFields()` with the `relation` key (don't write the relationship method).
-4. Are there many-to-many or hasMany? → use `$externalRelations`.
-5. Are there cross-field validations? → `getCustomRules()` + `'custom' => [...]` in the field's rules.
-6. Are there side effects (emails, audit, derived columns)? → lifecycle hooks (`creatingEvent`, `updatedEvent`, …).
-7. Does the user want extra search filters? → `scopeSearchXxx(Builder $query, $value): Builder`.
-8. Share the model in `HandleInertiaRequests`.
-9. Add the Inertia page route + Vue page with `<auto-table>`.
-10. **Stop.** Do not add controllers, FormRequests, CRUD routes, casts already covered by field types, `$fillable` for AutoCrud-managed fields, manual relationship methods for relations already declared, file-upload handlers, audit logging, soft-delete UI, export, or pagination logic.
+For deeper package docs see the `docs/` folder shipped with the package: `fields.md`, `relationships.md`, `validation.md`, `hooks.md`, `custom-search.md`, `examples.md`, `frontend/auto-table.md`, `frontend/auto-form.md`, `frontend/auto-form-dialog.md`, `api.md`.
 
 ---
 
-## Quick anti-patterns to reject
+## Decision checklist when adding a CRUD for X
 
-- "Edit `AutoTable.vue` to add a column." → Use `customHeaders` prop + `#item.<key>` slot.
-- "Override the published controller." → Don't. Use a model hook or a custom search scope.
-- "Add `protected $fillable = [...]` for AutoCrud fields." → Remove it.
-- "Write a `belongsTo` method for a field that already declares `relation`." → Remove it.
-- "`'options' => ['a' => 'A', 'b' => 'B']` for a select." → Replace with `['a', 'b']` (or with the user-facing labels themselves).
-- "Add a route `Route::resource('products', ...)`." → Remove it; the package already exposes `/laravel-auto-crud/products/...`.
-- "Add `->withTrashed()` to a relationship." → Remove it; the trait does it when the related model uses `SoftDeletes`.
+1. Migration with the columns / FKs / pivot tables / `softDeletes()`.
+2. `App\Models\X` with `use AutoCrud[, SoftDeletes];` and `getFields()`.
+3. FK fields → declare via `relation` key inside the field (no Eloquent method).
+4. Many-to-many / hasMany → `protected static $externalRelations = [...]`.
+5. Cross-field validation → `getCustomRules()` + `'rules' => ['custom' => ['...']]`.
+6. Side effects → lifecycle hooks (`creatingEvent`, `updatedEvent`, …).
+7. Extra search filters → `scopeSearchXxx(Builder $query, $value): Builder`.
+8. Confirm `models` is shared in `HandleInertiaRequests` (one-time setup).
+9. Add **one** Inertia page route + Vue page with `<auto-table :model="...">`.
+10. **Stop.** No controller, no FormRequest, no resource route, no `$fillable`, no manual relationship methods, no manual casts for typed fields, no upload/storage code, no audit code, no soft-delete UI, no export, no pagination logic.
+
+If the user requests anything in step 10, push back briefly and apply the matching recipe instead. If the requirement is genuinely outside the package (webhook, public API, non-CRUD action), then — and only then — write custom controllers/routes **alongside** the AutoCrud setup, never replacing it.
+
+---
+
+## Building a custom frontend on top of the model payload
+
+When a custom UI is unavoidable (bespoke dashboard, custom list, ad-hoc modal flow), do **not** rebuild metadata or hard-code endpoints. The `AutoCrud` trait's `getModel()` already exposes everything the frontend needs through `page.props.models.<modelName>`:
+
+```ts
+{
+  endPoint: string,            // base URL — append /load-items, /{id}, /bind/..., etc.
+  formFields: FormField[],     // form schema (rules, types, options, relations)
+  tableHeaders: TableHeader[], // ready-to-render columns (incl. relations & custom fields)
+  externalRelations: ExternalRelation[], // hasMany / belongsToMany (each carries its own endPoint)
+  forbiddenActions: { [role]: string[] },
+  calendarFields: object | null,
+  customFieldsEnabled: boolean,
+}
+```
+
+Key naming is **`endPoint`** (capital `P`), not `endpoint`. Same for `tableKey`, `formKey`, `itemTitle`, `comboField`, `morphType`, `pivotTable`, `pivotFields`, `foreignKey`, `relatedKey`, `customFieldsEnabled`.
+
+Full contract, available endpoints, and a checklist for custom-frontend work: [`references/model-payload.md`](references/model-payload.md).
