@@ -96,13 +96,27 @@ trait AutoCrud
         );
     }
 
-    public static function getEndpoint($model = null)
+    public static function getEndpoint($model = null, $context = 'web')
     {
+        if (!is_string($context)) {
+            $context = 'web';
+        }
+
         $modelName = lcfirst(
             str_replace('App\\Models\\', '', $model ?: static::class)
         );
 
-        return "/laravel-auto-crud/{$modelName}";
+        $prefix = trim(config("laravel-auto-crud.{$context}.prefix", 'laravel-auto-crud'), '/');
+
+        return "/{$prefix}/{$modelName}";
+    }
+
+    public static function getEndpoints($model = null)
+    {
+        return [
+            'web' => static::getEndpoint($model, 'web'),
+            'api' => static::getEndpoint($model, 'api'),
+        ];
     }
 
     public static function getModelName()
@@ -129,25 +143,35 @@ trait AutoCrud
         return static::$forbiddenActions;
     }
 
-    public static function getExternalRelations()
+    public static function getExternalRelations($context = 'web')
     {
-        foreach (static::$externalRelations as &$relation) {
-            $relation['endPoint'] = static::getEndpoint($relation['model']);
+        if (!is_string($context)) {
+            $context = 'web';
+        }
+
+        $externalRelations = static::$externalRelations;
+
+        foreach ($externalRelations as &$relation) {
+            $relation['endPoint'] = static::getEndpoint($relation['model'], $context);
 
             if (isset($relation['pivotFields'])) {
                 foreach ($relation['pivotFields'] as &$pivotField) {
                     if (isset($pivotField['relation'])) {
-                        $pivotField['relation']['endPoint'] = static::getEndpoint($pivotField['relation']['model']);
+                        $pivotField['relation']['endPoint'] = static::getEndpoint($pivotField['relation']['model'], $context);
                     }
                 }
             }
         }
 
-        return static::$externalRelations;
+        return $externalRelations;
     }
 
-    public static function getFormFields()
+    public static function getFormFields($context = 'web')
     {
+        if (!is_string($context)) {
+            $context = 'web';
+        }
+
         $formFields = array_filter(static::getFields(), function ($field) {
             return $field['form'];
         });
@@ -167,7 +191,7 @@ trait AutoCrud
             }
 
             if (isset($field['relation']) && (!isset($field['relation']['polymorphic']) || !$field['relation']['polymorphic'])) {
-                $formFields[$key]['relation']['endPoint'] = static::getEndpoint($field['relation']['model']);
+                $formFields[$key]['relation']['endPoint'] = static::getEndpoint($field['relation']['model'], $context);
             }
         }
 
@@ -289,8 +313,12 @@ trait AutoCrud
         return $relationMethod;
     }
 
-    public static function getModel($processedModels = [])
+    public static function getModel($processedModels = [], $context = 'web')
     {
+        if (!is_string($context)) {
+            $context = 'web';
+        }
+
         $forbiddenActions = static::getForbiddenActions();
 
         foreach ($forbiddenActions as $role => $actions) {
@@ -300,10 +328,11 @@ trait AutoCrud
         }
 
         return [
-            'endPoint' => static::getEndpoint(),
-            'formFields' => static::getFormFields($processedModels),
+            'endPoint' => static::getEndpoint(null, $context),
+            'endPoints' => static::getEndpoints(),
+            'formFields' => static::getFormFields($context),
             'tableHeaders' => static::getTableHeaders(),
-            'externalRelations' => static::getExternalRelations($processedModels),
+            'externalRelations' => static::getExternalRelations($context),
             'forbiddenActions' => $forbiddenActions,
             'calendarFields' => static::getCalendarFields(),
             'customFieldsEnabled' => static::hasCustomFieldsEnabled(),

@@ -4,18 +4,20 @@ namespace Ismaelcmajada\LaravelAutoCrud\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Request;
+use Ismaelcmajada\LaravelAutoCrud\Services\AutoCrudModelResolver;
 
 class AutoCompleteController extends Controller
 {
+    protected $models;
+
+    public function __construct(AutoCrudModelResolver $models)
+    {
+        $this->models = $models;
+    }
+
     private function getModel($model)
     {
-        $modelClass = 'App\\Models\\' . ucfirst($model);
-
-        if (class_exists($modelClass)) {
-            return new $modelClass;
-        } else {
-            abort(404, 'Model not found');
-        }
+        return $this->models->resolve($model);
     }
 
     public function getAll($model)

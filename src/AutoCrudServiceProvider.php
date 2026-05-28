@@ -12,8 +12,13 @@ class AutoCrudServiceProvider extends ServiceProvider
         // Registrar el middleware
         $this->registerMiddleware();
 
-        // Cargar las rutas del paquete
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        if (config('laravel-auto-crud.web.enabled', true)) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        }
+
+        if (config('laravel-auto-crud.api.enabled', false)) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        }
 
         $this->publishes([
             __DIR__ . '/../config/laravel-auto-crud.php' => config_path('laravel-auto-crud.php'),
@@ -51,7 +56,7 @@ class AutoCrudServiceProvider extends ServiceProvider
 
     public function register()
     {
-        //
+        $this->mergeConfigFrom(__DIR__ . '/../config/laravel-auto-crud.php', 'laravel-auto-crud');
     }
 
     protected function registerMiddleware()
@@ -59,5 +64,6 @@ class AutoCrudServiceProvider extends ServiceProvider
         // Registrar el alias del middleware
         $router = $this->app['router'];
         $router->aliasMiddleware('checkForbiddenActions', \Ismaelcmajada\LaravelAutoCrud\Http\Middleware\CheckForbiddenActions::class);
+        $router->aliasMiddleware('forceJsonResponse', \Ismaelcmajada\LaravelAutoCrud\Http\Middleware\ForceJsonResponse::class);
     }
 }

@@ -10,11 +10,13 @@ use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\FileController;
 use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\CalendarController;
 use Ismaelcmajada\LaravelAutoCrud\Http\Controllers\CustomFieldDefinitionController;
 
-Route::middleware('web')->group(function () {
-    Route::get('/laravel-auto-crud/public/images/{model}/{field}/{id}', [ImageController::class, 'publicImage']);
-    Route::get('/laravel-auto-crud/public/files/{model}/{field}/{id}', [FileController::class, 'publicFile']);
+Route::middleware(config('laravel-auto-crud.web.middleware', ['web']))->group(function () {
+    $prefix = trim(config('laravel-auto-crud.web.prefix', 'laravel-auto-crud'), '/');
 
-    Route::middleware(['auth', 'checkForbiddenActions'])->prefix('laravel-auto-crud')->group(function () {
+    Route::get($prefix . '/public/images/{model}/{field}/{id}', [ImageController::class, 'publicImage']);
+    Route::get($prefix . '/public/files/{model}/{field}/{id}', [FileController::class, 'publicFile']);
+
+    Route::middleware(config('laravel-auto-crud.web.protected_middleware', ['auth', 'checkForbiddenActions']))->prefix($prefix)->group(function () {
 
         
         Route::get('/private/images/{model}/{field}/{id}', [ImageController::class, 'privateImage']);

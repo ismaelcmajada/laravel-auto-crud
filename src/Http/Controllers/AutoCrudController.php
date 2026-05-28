@@ -3,46 +3,23 @@
 namespace Ismaelcmajada\LaravelAutoCrud\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Crypt;
-use App\Models\Record;
-use Illuminate\Support\Facades\Auth;
 use Ismaelcmajada\LaravelAutoCrud\Http\Requests\DynamicFormRequest;
-use Ismaelcmajada\LaravelAutoCrud\Events\AutoCrudActionCompleted;
+use Ismaelcmajada\LaravelAutoCrud\Services\AutoCrudService;
 
 class AutoCrudController extends Controller
 {
-    private function getModel($model)
-    {
-        $modelClass = 'App\\Models\\' . ucfirst($model);
+    protected $crud;
 
-        if (class_exists($modelClass)) {
-            return new $modelClass;
-        } else {
-            abort(404, 'Model not found');
-        }
+    public function __construct(AutoCrudService $crud)
+    {
+        $this->crud = $crud;
     }
 
     public function getItem($model, $id)
     {
-        $modelInstance = $this->getModel($model);
-        $item = $modelInstance::findOrFail($id);
-
-        $item->load($modelInstance::getIncludes());
-
-        // Agregar custom fields si están habilitados
-        if ($modelInstance::hasCustomFieldsEnabled()) {
-            $customValues = $item->getCustomFieldsValues();
-            foreach ($customValues as $key => $value) {
-                $item->setAttribute($key, $value);
-            }
-        }
-
-        return $item;
+        return $this->crud->getItem($model, $id);
     }
 
     public function index($model)
@@ -52,313 +29,82 @@ class AutoCrudController extends Controller
 
     public function store(DynamicFormRequest $request, $model)
     {
-        $validatedData = $request->validated();
-        $modelInstance = $this->getModel($model);
+        $result = $this->crud->store($request, $model);
 
-        foreach ($modelInstance::getFormFields() as $field) {
-            if ($field['type'] === 'select' && isset($field['multiple']) && $field['multiple']) {
-                $validatedData[$field['field']] = implode(', ', $validatedData[$field['field']]);
-            }
-            // Excluir campos de archivos del create (se manejan después)
-            if ($field['type'] === 'image' || $field['type'] === 'file') {
-                unset($validatedData[$field['field']]);
-            }
-        }
-
-        // Excluir custom fields del modelo principal (se guardan aparte)
-        $validatedData = array_filter($validatedData, function ($value, $key) {
-            return strpos($key, 'custom_') !== 0;
-        }, ARRAY_FILTER_USE_BOTH);
-
-        $instance = $modelInstance::create($validatedData);
-
-        // Manejo de archivos
-        foreach ($modelInstance::getFormFields() as $field) {
-            if (($field['type'] === 'image' || $field['type'] === 'file') && $request->hasFile($field['field'])) {
-                $storagePath = $field['public'] ? 'public/' : 'private/';
-                $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
-                $storagePath .= $model;
-
-                // Múltiples archivos
-                if (isset($field['multiple']) && $field['multiple'] && is_array($request->file($field['field']))) {
-                    $filePaths = [];
-                    foreach ($request->file($field['field']) as $index => $file) {
-                        $fileName = $field['field'] . '/' . $instance['id'] . '_' . $index . '_' . $file->getClientOriginalName();
-                        $filePath = $file->storeAs($storagePath, $fileName);
-
-                        if (!$field['public'] && $field['type'] === 'file') {
-                            $fileContent = Storage::get($filePath);
-                            $encryptedContent = Crypt::encryptString($fileContent);
-                            Storage::put($filePath, $encryptedContent);
-                        }
-
-                        $filePaths[] = $filePath;
-                    }
-                    $instance->{$field['field']} = json_encode($filePaths);
-                } else {
-                    // Archivo único
-                    $filePath = $request->file($field['field'])->storeAs($storagePath,  $field['field'] . '/' . $instance['id'] . '_' . time());
-
-                    if (!$field['public'] && $field['type'] === 'file') {
-                        $fileContent = Storage::get($filePath);
-                        $encryptedContent = Crypt::encryptString($fileContent);
-                        Storage::put($filePath, $encryptedContent);
-                    }
-
-                    $instance->{$field['field']} = $filePath;
-                }
-            }
-        }
-
-        $created = $instance->save();
-
-        // Guardar custom fields si están habilitados
-        if ($modelInstance::hasCustomFieldsEnabled()) {
-            $requestData = array_filter($request->all(), function ($value) {
-                return !($value instanceof \Illuminate\Http\UploadedFile);
-            });
-            $instance->saveCustomFields($requestData);
-        }
-
-        $instance->load($modelInstance::getIncludes());
-
-        // Agregar custom fields a la respuesta
-        if ($modelInstance::hasCustomFieldsEnabled()) {
-            $customValues = $instance->getCustomFieldsValues();
-            foreach ($customValues as $key => $value) {
-                $instance->setAttribute($key, $value);
-            }
-        }
-
-        if ($created) {
-            $this->setRecord($model, $instance->id, 'create');
-            AutoCrudActionCompleted::dispatch('store', $model, $instance, $validatedData);
-            return Redirect::back()->with(['success' => 'Elemento creado.', 'data' => $instance]);
-        }
+        return Redirect::back()->with([
+            'success' => $result['message'],
+            'data' => $result['data'],
+        ]);
     }
 
     public function update(DynamicFormRequest $request, $model, $id)
     {
-        $instance = $this->getModel($model)::findOrFail($id);
-        $validatedData = $request->validated();
+        $result = $this->crud->update($request, $model, $id);
 
-        foreach ($instance::getFormFields() as $field) {
-            if ($field['type'] === 'image' || $field['type'] === 'file') {
-                // Múltiples archivos - guardado aditivo
-                if (isset($field['multiple']) && $field['multiple']) {
-                    $existingFiles = json_decode($instance->{$field['field']}, true) ?? [];
-                    
-                    // Eliminar archivos marcados para borrar
-                    $filesToDelete = $request->input($field['field'] . '_delete', []);
-                    if (!empty($filesToDelete)) {
-                        foreach ($filesToDelete as $fileToDelete) {
-                            Storage::delete($fileToDelete);
-                            $existingFiles = array_filter($existingFiles, function ($f) use ($fileToDelete) {
-                                return $f !== $fileToDelete;
-                            });
-                        }
-                        $existingFiles = array_values($existingFiles); // Reindexar
-                    }
-                    
-                    // Añadir nuevos archivos
-                    if ($request->hasFile($field['field'])) {
-                        $storagePath = $field['public'] ? 'public/' : 'private/';
-                        $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
-                        $storagePath .= $model;
-                        
-                        foreach ($request->file($field['field']) as $file) {
-                            $fileName = $field['field'] . '/' . $id . '_' . time() . '_' . $file->getClientOriginalName();
-                            $filePath = $file->storeAs($storagePath, $fileName);
-
-                            if (!$field['public'] && $field['type'] === 'file') {
-                                $fileContent = Storage::get($filePath);
-                                $encryptedContent = Crypt::encryptString($fileContent);
-                                Storage::put($filePath, $encryptedContent);
-                            }
-
-                            $existingFiles[] = $filePath;
-                        }
-                    }
-                    
-                    $validatedData[$field['field']] = !empty($existingFiles) ? json_encode($existingFiles) : null;
-                    
-                } else {
-                    // Archivo único (comportamiento original)
-                    if ($request->input($field['field'] . '_edited')) {
-                        // Eliminar archivo existente usando el path guardado en DB
-                        if ($instance->{$field['field']}) {
-                            Storage::delete($instance->{$field['field']});
-                        }
-                        $validatedData[$field['field']] = null;
-                    }
-                    if ($request->hasFile($field['field'])) {
-                        $storagePath = $field['public'] ? 'public/' : 'private/';
-                        $storagePath .= $field['type'] === 'image' ? 'images/' : 'files/';
-                        $storagePath .= $model;
-                        $filePath = $request->file($field['field'])->storeAs($storagePath, $field['field'] . '/' . $id . '_' . time());
-
-                        if (!$field['public'] && $field['type'] === 'file') {
-                            $fileContent = Storage::get($filePath);
-                            $encryptedContent = Crypt::encryptString($fileContent);
-                            Storage::put($filePath, $encryptedContent);
-                        }
-
-                        $validatedData[$field['field']] = $filePath;
-                    }
-                }
-            }
-
-            if ($field['type'] === 'select' && isset($field['multiple']) && $field['multiple']) {
-                $validatedData[$field['field']] = implode(', ', $validatedData[$field['field']]);
-            }
-
-            if ($field['type'] === 'password' && !$request->input($field['field'])) {
-                unset($validatedData[$field['field']]);
-            }
-        }
-
-        // Excluir custom fields del modelo principal (se guardan aparte)
-        $validatedData = array_filter($validatedData, function ($value, $key) {
-            return strpos($key, 'custom_') !== 0;
-        }, ARRAY_FILTER_USE_BOTH);
-
-        $updated = $instance->update($validatedData);
-
-        // Guardar custom fields si están habilitados
-        if ($instance::hasCustomFieldsEnabled()) {
-            $instance->saveCustomFields($request->all());
-        }
-
-        $instance->load($instance::getIncludes());
-
-        // Agregar custom fields a la respuesta
-        if ($instance::hasCustomFieldsEnabled()) {
-            $customValues = $instance->getCustomFieldsValues();
-            foreach ($customValues as $key => $value) {
-                $instance->setAttribute($key, $value);
-            }
-        }
-
-        if ($updated) {
-            $this->setRecord($model, $instance->id, 'update');
-            AutoCrudActionCompleted::dispatch('update', $model, $instance, $validatedData);
-            return Redirect::back()->with(['success' => 'Elemento editado.', 'data' => $instance]);
-        }
+        return Redirect::back()->with([
+            'success' => $result['message'],
+            'data' => $result['data'],
+        ]);
     }
-
 
     public function destroy($model, $id)
     {
-        $instance = $this->getModel($model)::findOrFail($id);
+        $result = $this->crud->destroy($model, $id);
 
-        if ($instance->delete()) {
-
-            $this->setRecord($model, $instance->id, 'destroy');
-            AutoCrudActionCompleted::dispatch('destroy', $model, $instance);
-
-            return Redirect::back()->with('success', 'Elemento movido a la papelera.');
-        }
+        return Redirect::back()->with('success', $result['message']);
     }
 
     public function destroyPermanent($model, $id)
     {
-        $instance = $this->getModel($model)::onlyTrashed()->findOrFail($id);
-        foreach ($instance::getFormFields() as $field) {
-            if (in_array($field['type'], ['image', 'file']) && !empty($instance->{$field['field']})) {
-                if (isset($field['multiple']) && $field['multiple']) {
-                    $filePaths = json_decode($instance->{$field['field']}, true) ?? [];
-                    foreach ($filePaths as $filePath) {
-                        Storage::delete($filePath);
-                    }
-                } else {
-                    Storage::delete($instance->{$field['field']});
-                }
-            }
-        }
+        $result = $this->crud->destroyPermanent($model, $id);
 
-        // Eliminar custom field values solo cuando se elimina permanentemente
-        if ($instance::hasCustomFieldsEnabled()) {
-            $instance->customFieldValues()->delete();
-        }
-
-        if ($instance->forceDelete()) {
-
-            $this->setRecord($model, $instance->id, 'destroyPermanent');
-            AutoCrudActionCompleted::dispatch('destroyPermanent', $model, $instance);
-
-            return Redirect::back()->with('success', 'Elemento eliminado de forma permanente.');
-        }
+        return Redirect::back()->with('success', $result['message']);
     }
 
     public function restore($model, $id)
     {
-        $instance = $this->getModel($model)::onlyTrashed()->findOrFail($id);
+        $result = $this->crud->restore($model, $id);
 
-        if ($instance->restore()) {
-
-            $this->setRecord($model, $instance->id, 'restore');
-            AutoCrudActionCompleted::dispatch('restore', $model, $instance);
-
-            return Redirect::back()->with('success', 'Elemento restaurado.');
-        }
+        return Redirect::back()->with('success', $result['message']);
     }
 
     public function exportExcel($model)
     {
-        $items = $this->getModel($model)::all();
-
-        return  ['itemsExcel' => $items];
+        return $this->crud->exportExcel($model);
     }
 
     public function bind(DynamicFormRequest $request, $model, $id, $externalRelation, $item)
     {
-        $instance = $this->getModel($model)::findOrFail($id);
-        $validatedData = $request->validated();
+        $result = $this->crud->bind($request, $model, $id, $externalRelation, $item);
 
-        $instance->{$externalRelation}()->attach($item, $validatedData);
-
-        $instance->load($instance::getIncludes());
-
-        $this->setRecord($model, $instance->id, 'update');
-        AutoCrudActionCompleted::dispatch('bind', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
-
-        return Redirect::back()->with(['success' => 'Elemento vinculado', 'data' => $instance]);
+        return Redirect::back()->with([
+            'success' => $result['message'],
+            'data' => $result['data'],
+        ]);
     }
 
     public function updatePivot(DynamicFormRequest $request, $model, $id, $externalRelation, $item)
     {
-        $instance = $this->getModel($model)::findOrFail($id);
-        $validatedData = $request->validated();
+        $result = $this->crud->updatePivot($request, $model, $id, $externalRelation, $item);
 
-        $instance->{$externalRelation}()->updateExistingPivot($item, $validatedData);
-
-        $instance->load($instance::getIncludes());
-
-        $this->setRecord($model, $instance->id, 'update');
-        AutoCrudActionCompleted::dispatch('updatePivot', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
-        return Redirect::back()->with(['success' => 'Elemento actualizado', 'data' => $instance]);
+        return Redirect::back()->with([
+            'success' => $result['message'],
+            'data' => $result['data'],
+        ]);
     }
 
     public function unbind($model, $id, $externalRelation, $item)
     {
-        $instance = $this->getModel($model)::findOrFail($id);
-        $instance->{$externalRelation}()->detach($item);
+        $result = $this->crud->unbind($model, $id, $externalRelation, $item);
 
-        $instance->load($instance::getIncludes());
-
-        $this->setRecord($model, $instance->id, 'update');
-        AutoCrudActionCompleted::dispatch('unbind', $model, $instance, [], ['externalRelation' => $externalRelation, 'item' => $item]);
-        return Redirect::back()->with(['success' => 'Elemento desvinculado', 'data' => $instance]);
+        return Redirect::back()->with([
+            'success' => $result['message'],
+            'data' => $result['data'],
+        ]);
     }
 
     public function setRecord($model, $element_id, $action)
     {
-        $record = new Record();
-        $record->user_id = Auth::user()->id;
-        $record->element_id = $element_id;
-        $record->action = $action;
-        $record->model = 'App\\Models\\' . ucfirst($model);
-
-        $record->save();
+        $this->crud->setRecord($model, $element_id, $action);
     }
 }

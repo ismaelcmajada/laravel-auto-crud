@@ -6,19 +6,21 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Ismaelcmajada\LaravelAutoCrud\Models\CustomFieldDefinition;
+use Ismaelcmajada\LaravelAutoCrud\Services\AutoCrudModelResolver;
 
 
 class AutoTableController extends Controller
 {
+    protected $models;
+
+    public function __construct(AutoCrudModelResolver $models)
+    {
+        $this->models = $models;
+    }
+
     private function getModel($model)
     {
-        $modelClass = 'App\\Models\\' . ucfirst($model);
-
-        if (class_exists($modelClass)) {
-            return new $modelClass;
-        } else {
-            abort(404, 'Model not found');
-        }
+        return $this->models->resolve($model);
     }
 
     public function loadItems($model)
