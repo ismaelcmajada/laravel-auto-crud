@@ -34,6 +34,34 @@ class X extends Model
 
 ---
 
+## Enable API mode for external frontends
+
+When the user asks for a JSON API, external frontend, mobile app, React/Next app, or frontend that does not use Inertia:
+
+1. Create the same AutoCrud model as the normal CRUD recipe. API mode does not change `getFields()`.
+2. Publish config if needed with `php artisan vendor:publish --tag=laravel-auto-crud-config`, then enable API routes in `config/laravel-auto-crud.php`:
+
+```php
+'api' => [
+    'enabled' => true,
+    'prefix' => 'api/laravel-auto-crud',
+    'middleware' => ['forceJsonResponse', 'api', 'auth:sanctum', 'checkForbiddenActions'],
+    'public_middleware' => null,
+],
+```
+
+3. If the app uses another auth driver, replace `auth:sanctum` but keep `forceJsonResponse` before auth.
+4. Tell the external frontend to load schema from `GET /api/laravel-auto-crud/{model}/schema`.
+5. Build requests from `schema.endPoint`; do not hard-code `/api/laravel-auto-crud/...` inside app components unless bootstrapping schema.
+6. Use `POST {endPoint}/load-items` for tables, `POST {endPoint}` for create, `PUT {endPoint}/{id}` for update, `DELETE {endPoint}/{id}` for soft delete, `POST {endPoint}/{id}/restore` for restore, and `DELETE {endPoint}/{id}/force` for permanent delete.
+7. For file updates, use `POST {endPoint}/{id}` with `_method=PUT` and `multipart/form-data`.
+
+**Do NOT** create `Route::apiResource`, API controllers, API resources, or API FormRequests for standard AutoCrud CRUD operations.
+
+See full docs: `docs/api-mode.md`.
+
+---
+
 ## Custom validation
 
 Cross-field or rule-not-built-in:
@@ -88,7 +116,7 @@ The package handles upload, storage path (`storage/{public|private}/{images|file
 1. Add `protected static $calendarFields = [...]` on the model with `start`, `end`, `title` keys mapping to fields.
 2. In the page, render `<auto-calendar :model="model" />` (imported from `@/Components/LaravelAutoCrud/AutoCalendar.vue`).
 
-The endpoint `/laravel-auto-crud/{model}/load-calendar-events` is exposed automatically.
+The web endpoint `/laravel-auto-crud/{model}/load-calendar-events` is exposed automatically. In API mode, use `/api/laravel-auto-crud/{model}/load-calendar-events`.
 
 ---
 

@@ -38,16 +38,35 @@ public static function getIncludes(): array
 - Relationships from `$externalRelations`
 
 ### getEndpoint()
-Returns the API endpoint for the model.
+Returns the web or API endpoint for the model.
 
 ```php
-public static function getEndpoint($model = null): string
+public static function getEndpoint($model = null, $context = 'web'): string
 ```
 
 **Parameters:**
-- `$model` (optional): Model instance or class name
+- `$model` (optional): Model class name
+- `$context` (optional): `web` or `api`
 
-**Returns:** API endpoint string (e.g., `/laravel-auto-crud/users`)
+**Returns:** Endpoint string (e.g., `/laravel-auto-crud/user` or `/api/laravel-auto-crud/user`)
+
+### getEndpoints()
+Returns both web and API endpoints for the model.
+
+```php
+public static function getEndpoints($model = null): array
+```
+
+**Returns:** Array with `web` and `api` keys.
+
+**Example:**
+```php
+Product::getEndpoints();
+// [
+//     'web' => '/laravel-auto-crud/product',
+//     'api' => '/api/laravel-auto-crud/product',
+// ]
+```
 
 ### getModelName()
 Returns the camelCase model name.
@@ -103,10 +122,10 @@ public static function getForbiddenActions(): array
 Returns enriched external relationships.
 
 ```php
-public static function getExternalRelations(): array
+public static function getExternalRelations($context = 'web'): array
 ```
 
-**Returns:** Array of external relationship definitions with added endpoints
+**Returns:** Array of external relationship definitions with added endpoints for the selected context.
 
 ## Form and Table Methods
 
@@ -114,10 +133,10 @@ public static function getExternalRelations(): array
 Returns fields that should appear in forms.
 
 ```php
-public static function getFormFields(): array
+public static function getFormFields($context = 'web'): array
 ```
 
-**Returns:** Array of fields where `form === true`, plus auto-generated `comboField` entries
+**Returns:** Array of fields where `form === true`, plus auto-generated `comboField` entries. Relation endpoints use the selected context.
 
 ### getTableFields()
 Returns fields that should appear in tables.
@@ -141,17 +160,18 @@ protected static function getTableHeaders(): array
 Returns the complete payload for frontend consumption.
 
 ```php
-public static function getModel($processedModels = []): array
+public static function getModel($processedModels = [], $context = 'web'): array
 ```
 
 **Parameters:**
 - `$processedModels`: Array to prevent circular references
+- `$context`: `web` or `api`, used when generating endpoints
 
 **Returns:** Complete model payload including:
 - Field definitions
 - Validation rules
 - Relationships
-- Endpoints
+- Web/API endpoints
 - Table headers
 - Form fields
 
@@ -320,14 +340,22 @@ $customRules = User::getCustomRules();
 $forbiddenActions = User::getForbiddenActions();
 ```
 
-### API Endpoint Generation
+### Endpoint Generation
 ```php
-// Get model endpoint
-$endpoint = User::getEndpoint(); // "/laravel-auto-crud/users"
+// Get web model endpoint
+$endpoint = User::getEndpoint(); // "/laravel-auto-crud/user"
+
+// Get API model endpoint
+$apiEndpoint = User::getEndpoint(null, 'api'); // "/api/laravel-auto-crud/user"
 
 // Get specific model endpoint
 $userEndpoint = User::getEndpoint($userInstance);
+
+// Get both interfaces
+$endpoints = User::getEndpoints();
 ```
+
+For the HTTP JSON API, see [API Mode](/api-mode/).
 
 ## Automatic Initialization
 
