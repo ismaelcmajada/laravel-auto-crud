@@ -35,6 +35,7 @@ Route::middleware($apiMiddleware)
             Route::post('/', [ApiCustomFieldDefinitionController::class, 'store'])->name('laravel-auto-crud.api.custom-fields.store');
             Route::put('/{id}', [ApiCustomFieldDefinitionController::class, 'update'])->name('laravel-auto-crud.api.custom-fields.update');
             Route::patch('/{id}', [ApiCustomFieldDefinitionController::class, 'update']);
+            Route::post('/{id}', [ApiCustomFieldDefinitionController::class, 'update']);
             Route::delete('/{id}', [ApiCustomFieldDefinitionController::class, 'destroy'])->name('laravel-auto-crud.api.custom-fields.destroy');
             Route::post('/{id}/destroy', [ApiCustomFieldDefinitionController::class, 'destroy']);
             Route::post('/reorder', [ApiCustomFieldDefinitionController::class, 'reorder'])->name('laravel-auto-crud.api.custom-fields.reorder');

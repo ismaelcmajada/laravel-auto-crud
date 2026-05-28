@@ -27,8 +27,9 @@ class X extends Model
 3. For each FK, add the field's `relation` key (see [relations.md](relations.md)). **Do not** add Eloquent relationship methods.
 4. For hasMany / belongsToMany, add `protected static $externalRelations = [...]`.
 5. Confirm `'models' => app('models')` is shared in `HandleInertiaRequests::share()` (one-time project setup).
-6. Add **one** Inertia page route: `Route::get('/x', fn () => Inertia::render('X'))->name('x');`.
-7. Create `resources/js/Pages/X.vue` with `<auto-table :model="usePage().props.models.x" />`.
+6. Register `createAutoCrudPlugin({ adapter: createInertiaAutoCrudAdapter() })` once in the app frontend bootstrap.
+7. Add **one** Inertia page route: `Route::get('/x', fn () => Inertia::render('X'))->name('x');`.
+8. Create `resources/js/Pages/X.vue` with `<auto-table :model="usePage().props.models.x" />`.
 
 **Do NOT** create: controller, FormRequest, resource route, `$fillable`, `$casts` (for typed fields), relationship methods (for declared relations), file-upload code, audit code, soft-delete UI, export, pagination logic.
 
@@ -55,6 +56,7 @@ When the user asks for a JSON API, external frontend, mobile app, React/Next app
 5. Build requests from `schema.endPoint`; do not hard-code `/api/laravel-auto-crud/...` inside app components unless bootstrapping schema.
 6. Use `POST {endPoint}/load-items` for tables, `POST {endPoint}` for create, `PUT {endPoint}/{id}` for update, `DELETE {endPoint}/{id}` for soft delete, `POST {endPoint}/{id}/restore` for restore, and `DELETE {endPoint}/{id}/force` for permanent delete.
 7. For file updates, use `POST {endPoint}/{id}` with `_method=PUT` and `multipart/form-data`.
+8. If using the package Vue components, register `createAutoCrudPlugin({ adapter: createApiAutoCrudAdapter({ baseUrl, axios }) })` before rendering them.
 
 **Do NOT** create `Route::apiResource`, API controllers, API resources, or API FormRequests for standard AutoCrud CRUD operations.
 

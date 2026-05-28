@@ -496,10 +496,75 @@ When the schema endpoint is requested through API, relation endpoints inside `fo
 6. Use relation endpoints from the schema instead of hardcoding related model URLs.
 7. Handle `422`, `401`, `403`, and `404` as JSON responses.
 
+## Using The Published Vue Components Without Inertia
+
+The published Vue components can run against either Inertia or the JSON API through an adapter plugin.
+
+In an external Vue/Vuetify frontend, install the API adapter once when bootstrapping the app:
+
+```js
+import axios from "axios"
+import { createApp } from "vue"
+import {
+  createApiAutoCrudAdapter,
+  createAutoCrudPlugin,
+} from "./Adapters/LaravelAutoCrud"
+
+const app = createApp(App)
+
+app.use(
+  createAutoCrudPlugin({
+    adapter: createApiAutoCrudAdapter({
+      baseUrl: "/api/laravel-auto-crud",
+      axios,
+      getAuthUser: () => auth.user,
+    }),
+  }),
+)
+```
+
+Then load the schema and pass it to the same components used by Inertia apps:
+
+```vue
+<script setup>
+import { onMounted, ref } from "vue"
+import AutoTable from "./Components/LaravelAutoCrud/AutoTable.vue"
+import { useAutoCrud } from "./Adapters/LaravelAutoCrud"
+
+const autoCrud = useAutoCrud()
+const model = ref(null)
+
+onMounted(async () => {
+  model.value = await autoCrud.loadSchema("product")
+})
+</script>
+
+<template>
+  <auto-table v-if="model" title="Products" :model="model" />
+</template>
+```
+
+For existing Inertia apps, install the Inertia adapter:
+
+```js
+import {
+  createAutoCrudPlugin,
+  createInertiaAutoCrudAdapter,
+} from "./Adapters/LaravelAutoCrud"
+
+app.use(
+  createAutoCrudPlugin({
+    adapter: createInertiaAutoCrudAdapter(),
+  }),
+)
+```
+
+Components no longer import `@inertiajs/vue3` directly. Only `inertiaAdapter.js` depends on Inertia, so external frontends can use `apiAdapter.js` without installing Inertia.
+
 ## Compatibility Notes
 
 - API mode is disabled by default, so existing Inertia installations keep their current behavior.
 - Web and API routes can use different prefixes and middleware stacks.
-- The published Vue/Inertia components continue using the web endpoints unless you adapt them to call the API endpoints.
+- The published Vue components require an AutoCrud adapter plugin. Use `createInertiaAutoCrudAdapter()` for Inertia apps and `createApiAutoCrudAdapter()` for external frontends.
 - The API is designed for external frontends; it does not require Inertia.
 - File updates with `multipart/form-data` should use `POST` plus `_method=PUT` for maximum compatibility.

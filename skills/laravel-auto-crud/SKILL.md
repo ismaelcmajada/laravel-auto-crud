@@ -7,7 +7,7 @@ description: Use this skill whenever you need to add, modify, or scaffold a CRUD
 
 Skill for working with the `ismaelcmajada/laravel-auto-crud` package. The package autogenerates the entire CRUD pipeline (web routes, optional JSON API routes, controllers, FormRequests, validation, table/form payloads, autocomplete, files/images, calendar, soft-delete, history, pivots, …) from a single model that uses the `AutoCrud` trait.
 
-For web/Inertia screens, your job is almost always limited to: **migration → model with `getFields()` → share `models` in Inertia → Inertia page route → Vue page with `<auto-table>`**. For external frontends, your job is usually: **migration → model with `getFields()` → enable API mode → consume `/api/laravel-auto-crud/{model}/schema`**. Nothing else.
+For web/Inertia screens, your job is almost always limited to: **migration → model with `getFields()` → share `models` in Inertia → install `createInertiaAutoCrudAdapter()` → Inertia page route → Vue page with `<auto-table>`**. For external frontends, your job is usually: **migration → model with `getFields()` → enable API mode → install `createApiAutoCrudAdapter()` → consume `/api/laravel-auto-crud/{model}/schema`**. Nothing else.
 
 ---
 
@@ -132,6 +132,17 @@ const model = usePage().props.models.product
 
 That's the entire CRUD. **Stop here unless something is genuinely outside the package scope.**
 
+The app must register the frontend adapter once:
+
+```js
+import {
+  createAutoCrudPlugin,
+  createInertiaAutoCrudAdapter,
+} from "@/Adapters/LaravelAutoCrud"
+
+app.use(createAutoCrudPlugin({ adapter: createInertiaAutoCrudAdapter() }))
+```
+
 ---
 
 ## Golden path for API/external frontends
@@ -159,6 +170,19 @@ GET /api/laravel-auto-crud/{model}/schema
 4. Build UI from `data.formFields`, `data.tableHeaders`, `data.externalRelations`, and `data.endPoint`.
 5. Use `POST {endPoint}/load-items`, `POST {endPoint}`, `PUT {endPoint}/{id}`, `DELETE {endPoint}/{id}`, relation endpoints, custom-fields endpoints, and file endpoints from the package.
 6. **Do not** create API resource controllers/routes/FormRequests for the AutoCrud model.
+
+Install the API adapter once in the external Vue app:
+
+```js
+import {
+  createApiAutoCrudAdapter,
+  createAutoCrudPlugin,
+} from "./Adapters/LaravelAutoCrud"
+
+app.use(createAutoCrudPlugin({
+  adapter: createApiAutoCrudAdapter({ baseUrl: "/api/laravel-auto-crud", axios }),
+}))
+```
 
 Full API mode contract: [`references/model-payload.md`](references/model-payload.md#api-mode--external-frontends) and package docs `docs/api-mode.md`.
 

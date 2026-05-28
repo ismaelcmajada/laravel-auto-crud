@@ -33,6 +33,9 @@ class AutoCrudServiceProvider extends ServiceProvider
 
             // Composables
             __DIR__ . '/../resources/js/Composables/LaravelAutoCrud' => resource_path('js/Composables/LaravelAutoCrud'),
+
+            // Transport adapters (Inertia / API)
+            __DIR__ . '/../resources/js/Adapters/LaravelAutoCrud' => resource_path('js/Adapters/LaravelAutoCrud'),
         ], 'laravel-auto-crud');
 
         // Publish migrations for custom fields

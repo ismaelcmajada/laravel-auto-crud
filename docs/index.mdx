@@ -49,6 +49,21 @@ php artisan vendor:publish --tag=laravel-auto-crud-skill --force
 php artisan vendor:publish --tag=laravel-auto-crud-skill-claude --force
 ```
 
+Register the frontend adapter before rendering published components.
+
+For Inertia apps:
+
+```js
+import {
+  createAutoCrudPlugin,
+  createInertiaAutoCrudAdapter,
+} from "@/Adapters/LaravelAutoCrud"
+
+app.use(createAutoCrudPlugin({ adapter: createInertiaAutoCrudAdapter() }))
+```
+
+For external API frontends, use `createApiAutoCrudAdapter()` instead. See [API Mode](/api-mode/).
+
 ## Quick Start
 
 ### 1. Create a Model

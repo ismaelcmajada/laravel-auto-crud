@@ -1,9 +1,9 @@
 <script setup>
 import AutoForm from "./AutoForm.vue"
 import { computed, ref } from "vue"
-import { usePage } from "@inertiajs/vue3"
+import { useAutoCrud } from "../../Adapters/LaravelAutoCrud/context"
 
-const page = usePage()
+const autoCrud = useAutoCrud()
 
 const props = defineProps([
   "show",
@@ -30,7 +30,7 @@ const model = computed(() => {
     const parts = props.modelName.split("\\")
     const modelName = parts[parts.length - 1].toLowerCase()
 
-    return page.props.models[modelName]
+    return autoCrud.model(modelName)
   } else {
     return props.model
   }

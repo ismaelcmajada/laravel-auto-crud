@@ -211,11 +211,12 @@ Publish config if needed with `php artisan vendor:publish --tag=laravel-auto-cru
 External frontend flow:
 
 1. Authenticate using the configured middleware, typically Sanctum.
-2. Fetch `GET /api/laravel-auto-crud/{model}/schema`.
-3. Read the schema from `response.data.data`.
-4. Use `schema.endPoint` to call CRUD endpoints.
-5. Render forms from `schema.formFields` and tables from `schema.tableHeaders`.
-6. Use `schema.externalRelations` to discover related model endpoints.
+2. Register `createAutoCrudPlugin({ adapter: createApiAutoCrudAdapter({ baseUrl, axios }) })` if using the package Vue components.
+3. Fetch `GET /api/laravel-auto-crud/{model}/schema`.
+4. Read the schema from `response.data.data`.
+5. Use `schema.endPoint` to call CRUD endpoints.
+6. Render forms from `schema.formFields` and tables from `schema.tableHeaders`.
+7. Use `schema.externalRelations` to discover related model endpoints.
 
 Protected API endpoints:
 
