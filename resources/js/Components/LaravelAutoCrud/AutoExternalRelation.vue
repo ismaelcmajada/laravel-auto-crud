@@ -358,7 +358,7 @@ watch(
   <!-- Título de la relación (opcional) -->
   <v-row v-if="props.withTitle" class="align-center justify-center my-3">
     <v-col class="justify-center align-center text-center" cols="12">
-      <span class="text-h5">{{ props.externalRelation.name }}</span>
+      <span class="text-headline-medium">{{ props.externalRelation.name }}</span>
     </v-col>
   </v-row>
 
@@ -369,7 +369,7 @@ watch(
   <!-- FORM para añadir un nuevo elemento a la tabla pivote -->
   <v-form v-if="!isHasMany" v-model="addForm" @submit.prevent="addItem">
     <v-row
-      class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-5'"
+      class="align-center justify-center my-3 mx-1 elevation-5 rounded pa-5'"
     >
       <!-- Autocomplete principal (relación n:m) -->
       <v-col
@@ -754,7 +754,7 @@ watch(
     <!-- VISTA NORMAL (sin editar) -->
     <v-row
       v-if="relationItem.id !== pivotEditing"
-      class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
+      class="align-center justify-center my-2 mx-1 elevation-5 rounded pa-2"
     >
       <v-col class="my-3">
         {{ generateItemTitle(props.externalRelation.formKey)(relationItem) }}
@@ -840,7 +840,7 @@ watch(
       class="w-100"
     >
       <v-row
-        class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-5'"
+        class="align-center justify-center my-3 mx-1 elevation-5 rounded pa-5'"
       >
         <v-col
           cols="12"

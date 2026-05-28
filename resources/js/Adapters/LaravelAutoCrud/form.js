@@ -1,6 +1,6 @@
 import { reactive, watch } from "vue"
 
-const clone = (value) => JSON.parse(JSON.stringify(value ?? {}))
+const clone = (value) => structuredClone(value ?? {})
 
 export function createAdapterForm(defaults, submitter) {
   let defaultValues = clone(defaults)
@@ -15,7 +15,7 @@ export function createAdapterForm(defaults, submitter) {
     isDirty: false,
 
     data() {
-      const reserved = [
+      const reserved = new Set([
         "errors",
         "processing",
         "wasSuccessful",
@@ -33,10 +33,10 @@ export function createAdapterForm(defaults, submitter) {
         "put",
         "patch",
         "delete",
-      ]
+      ])
 
       return Object.keys(form).reduce((data, key) => {
-        if (!reserved.includes(key)) {
+        if (!reserved.has(key)) {
           data[key] = form[key]
         }
 
@@ -54,17 +54,17 @@ export function createAdapterForm(defaults, submitter) {
       const values = clone(defaultValues)
 
       if (fields.length === 0) {
-        Object.keys(form.data()).forEach((key) => {
+        for (const key of Object.keys(form.data())) {
           delete form[key]
-        })
+        }
 
-        Object.keys(values).forEach((key) => {
+        for (const key of Object.keys(values)) {
           form[key] = values[key]
-        })
+        }
       } else {
-        fields.forEach((field) => {
+        for (const field of fields) {
           form[field] = values[field]
-        })
+        }
       }
 
       form.isDirty = false
@@ -75,7 +75,9 @@ export function createAdapterForm(defaults, submitter) {
       if (fields.length === 0) {
         form.errors = {}
       } else {
-        fields.forEach((field) => delete form.errors[field])
+        for (const field of fields) {
+          delete form.errors[field]
+        }
       }
 
       return form
@@ -150,7 +152,12 @@ export function normalizeApiResponse(response) {
   const data = Object.prototype.hasOwnProperty.call(payload, "data")
     ? payload.data
     : payload
-  const message = payload.message ?? payload.success
+  const message =
+    typeof payload.message === "string"
+      ? payload.message
+      : typeof payload.success === "string"
+        ? payload.success
+        : null
 
   return {
     raw: response,

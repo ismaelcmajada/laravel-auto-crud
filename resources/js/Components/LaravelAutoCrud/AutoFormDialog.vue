@@ -213,7 +213,7 @@ const cancelClose = () => {
   <!-- Confirmation dialog for unsaved changes -->
   <v-dialog v-model="showConfirmDialog" max-width="400">
     <v-card>
-      <v-card-title class="text-h6"> Cambios sin guardar </v-card-title>
+      <v-card-title class="text-headline-small"> Cambios sin guardar </v-card-title>
       <v-card-text>
         Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar el
         formulario? Los cambios se perderán.

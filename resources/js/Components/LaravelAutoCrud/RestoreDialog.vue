@@ -36,7 +36,7 @@ const submit = () => {
   <v-dialog scrollable v-model="dialogState" width="auto">
     <v-card>
       <v-card-title>
-        <span class="text-h5"
+        <span class="text-headline-medium"
           >Restaurar
           {{ props.items && props.items.length > 0 ? "elementos" : "elemento" }}
         </span>

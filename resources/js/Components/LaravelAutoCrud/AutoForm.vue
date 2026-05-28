@@ -675,7 +675,7 @@ watch(isFormDirty, (value) => {
               <!-- Preview imagen única -->
               <v-row
                 v-if="!field.multiple && imagePreview[field.field]"
-                class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-2"
+                class="align-center justify-center my-3 mx-1 elevation-5 rounded pa-2"
               >
                 <v-col cols="12" md="1" class="text-center">
                   {{ field.name }}
@@ -791,7 +791,7 @@ watch(isFormDirty, (value) => {
               <!-- Preview archivo único -->
               <v-row
                 v-if="!field.multiple && filePreview[field.field]"
-                class="align-center justify-center my-3 mx-1 elevation-6 rounded pa-2"
+                class="align-center justify-center my-3 mx-1 elevation-5 rounded pa-2"
               >
                 <v-col cols="12" md="10" class="text-center">
                   {{ field.name }}

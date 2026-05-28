@@ -579,7 +579,7 @@ watch(item, (value) => {
       :class="{ 'bg-red-lighten-4': tableData.deleted }"
     >
       <v-col class="py-0">
-        <span class="text-subtitle-1 font-weight-medium">{{ title }}</span>
+        <span class="text-body-large font-weight-medium">{{ title }}</span>
       </v-col>
       <v-col class="text-end py-0">
         <slot
@@ -696,7 +696,7 @@ watch(item, (value) => {
     <!-- Items en modo lista -->
     <template v-for="listItem in tableData.items" :key="listItem.id">
       <v-row
-        class="align-center justify-center my-2 mx-1 elevation-6 rounded pa-2"
+        class="align-center justify-center my-2 mx-1 elevation-5 rounded pa-2"
         :class="{ 'bg-red-lighten-4': tableData.deleted }"
       >
         <!-- Columnas de datos -->
@@ -705,7 +705,7 @@ watch(item, (value) => {
           :key="header.key"
         >
           <slot :name="`item.${header.key}`" :item="listItem">
-            <div class="text-caption text-grey">{{ header.title }}</div>
+            <div class="text-body-small text-grey">{{ header.title }}</div>
             <div>
               <!-- Si header tiene relation y tableKey (belongsTo) -->
               <template v-if="header.relation && header.relation.tableKey">
@@ -991,7 +991,7 @@ watch(item, (value) => {
   </v-card>
 
   <!-- MODO TABLA (original) -->
-  <v-card v-else elevation="6" class="ma-5" variant="outlined">
+  <v-card v-else elevation="5" class="ma-5" variant="outlined">
     <v-data-table-server
       multi-sort
       :loading="loading"

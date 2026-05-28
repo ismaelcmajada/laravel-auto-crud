@@ -316,7 +316,7 @@ onMounted(() => {
   <!-- Diálogo de confirmación para cerrar sin guardar -->
   <v-dialog v-model="showConfirmCloseDialog" max-width="400">
     <v-card>
-      <v-card-title class="text-h6">Cambios sin guardar</v-card-title>
+      <v-card-title class="text-headline-small">Cambios sin guardar</v-card-title>
       <v-card-text>
         Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar el
         formulario? Los cambios se perderán.
