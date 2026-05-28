@@ -58,9 +58,17 @@ class AutoCrudService
         $validatedData = $this->withoutCustomFields($validatedData);
         $instance = $modelInstance::create($validatedData);
 
+        if (!$instance->exists) {
+            return $this->failure('No se pudo crear el elemento.', $instance);
+        }
+
         $this->storeUploadedFiles($request, $model, $modelInstance, $instance);
 
         $created = $instance->save();
+
+        if (!$created) {
+            return $this->failure('No se pudo crear el elemento.', $instance);
+        }
 
         if ($modelInstance::hasCustomFieldsEnabled()) {
             $instance->saveCustomFields($this->requestDataWithoutUploadedFiles($request));
@@ -69,15 +77,10 @@ class AutoCrudService
         $instance->load($modelInstance::getIncludes());
         $this->addCustomFieldsToItem($instance);
 
-        if ($created) {
-            $this->setRecord($model, $instance->id, 'create');
-            AutoCrudActionCompleted::dispatch('store', $model, $instance, $validatedData);
-        }
+        $this->setRecord($model, $instance->id, 'create');
+        AutoCrudActionCompleted::dispatch('store', $model, $instance, $validatedData);
 
-        return [
-            'message' => 'Elemento creado.',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento creado.', $instance);
     }
 
     public function update($request, $model, $id)
@@ -102,6 +105,10 @@ class AutoCrudService
         $validatedData = $this->withoutCustomFields($validatedData);
         $updated = $instance->update($validatedData);
 
+        if (!$updated) {
+            return $this->failure('No se pudo editar el elemento.', $instance);
+        }
+
         if ($instance::hasCustomFieldsEnabled()) {
             $instance->saveCustomFields($request->all());
         }
@@ -109,77 +116,75 @@ class AutoCrudService
         $instance->load($instance::getIncludes());
         $this->addCustomFieldsToItem($instance);
 
-        if ($updated) {
-            $this->setRecord($model, $instance->id, 'update');
-            AutoCrudActionCompleted::dispatch('update', $model, $instance, $validatedData);
-        }
+        $this->setRecord($model, $instance->id, 'update');
+        AutoCrudActionCompleted::dispatch('update', $model, $instance, $validatedData);
 
-        return [
-            'message' => 'Elemento editado.',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento editado.', $instance);
     }
 
     public function destroy($model, $id)
     {
         $instance = $this->resolveModel($model)::findOrFail($id);
 
-        if ($instance->delete()) {
-            $this->setRecord($model, $instance->id, 'destroy');
-            AutoCrudActionCompleted::dispatch('destroy', $model, $instance);
+        if (!$instance->delete()) {
+            return $this->failure('No se pudo eliminar el elemento.', $instance);
         }
 
-        return [
-            'message' => 'Elemento movido a la papelera.',
-            'data' => $instance,
-        ];
+        $this->setRecord($model, $instance->id, 'destroy');
+        AutoCrudActionCompleted::dispatch('destroy', $model, $instance);
+
+        return $this->success('Elemento movido a la papelera.', $instance);
     }
 
     public function destroyPermanent($model, $id)
     {
         $instance = $this->resolveModel($model)::onlyTrashed()->findOrFail($id);
 
+        $filePathsToDelete = [];
+
         foreach ($instance::getFormFields() as $field) {
             if (in_array($field['type'], ['image', 'file']) && !empty($instance->{$field['field']})) {
                 if (isset($field['multiple']) && $field['multiple']) {
                     $filePaths = json_decode($instance->{$field['field']}, true) ?: [];
                     foreach ($filePaths as $filePath) {
-                        Storage::delete($filePath);
+                        $filePathsToDelete[] = $filePath;
                     }
                 } else {
-                    Storage::delete($instance->{$field['field']});
+                    $filePathsToDelete[] = $instance->{$field['field']};
                 }
             }
+        }
+
+        if (!$instance->forceDelete()) {
+            return $this->failure('No se pudo eliminar el elemento de forma permanente.', $instance);
+        }
+
+        foreach ($filePathsToDelete as $filePath) {
+            Storage::delete($filePath);
         }
 
         if ($instance::hasCustomFieldsEnabled()) {
             $instance->customFieldValues()->delete();
         }
 
-        if ($instance->forceDelete()) {
-            $this->setRecord($model, $instance->id, 'destroyPermanent');
-            AutoCrudActionCompleted::dispatch('destroyPermanent', $model, $instance);
-        }
+        $this->setRecord($model, $instance->id, 'destroyPermanent');
+        AutoCrudActionCompleted::dispatch('destroyPermanent', $model, $instance);
 
-        return [
-            'message' => 'Elemento eliminado de forma permanente.',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento eliminado de forma permanente.', $instance);
     }
 
     public function restore($model, $id)
     {
         $instance = $this->resolveModel($model)::onlyTrashed()->findOrFail($id);
 
-        if ($instance->restore()) {
-            $this->setRecord($model, $instance->id, 'restore');
-            AutoCrudActionCompleted::dispatch('restore', $model, $instance);
+        if (!$instance->restore()) {
+            return $this->failure('No se pudo restaurar el elemento.', $instance);
         }
 
-        return [
-            'message' => 'Elemento restaurado.',
-            'data' => $instance,
-        ];
+        $this->setRecord($model, $instance->id, 'restore');
+        AutoCrudActionCompleted::dispatch('restore', $model, $instance);
+
+        return $this->success('Elemento restaurado.', $instance);
     }
 
     public function exportExcel($model)
@@ -198,10 +203,7 @@ class AutoCrudService
         $this->setRecord($model, $instance->id, 'update');
         AutoCrudActionCompleted::dispatch('bind', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
 
-        return [
-            'message' => 'Elemento vinculado',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento vinculado', $instance);
     }
 
     public function updatePivot($request, $model, $id, $externalRelation, $item)
@@ -215,10 +217,7 @@ class AutoCrudService
         $this->setRecord($model, $instance->id, 'update');
         AutoCrudActionCompleted::dispatch('updatePivot', $model, $instance, $validatedData, ['externalRelation' => $externalRelation, 'item' => $item]);
 
-        return [
-            'message' => 'Elemento actualizado',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento actualizado', $instance);
     }
 
     public function unbind($model, $id, $externalRelation, $item)
@@ -231,10 +230,7 @@ class AutoCrudService
         $this->setRecord($model, $instance->id, 'update');
         AutoCrudActionCompleted::dispatch('unbind', $model, $instance, [], ['externalRelation' => $externalRelation, 'item' => $item]);
 
-        return [
-            'message' => 'Elemento desvinculado',
-            'data' => $instance,
-        ];
+        return $this->success('Elemento desvinculado', $instance);
     }
 
     public function setRecord($model, $elementId, $action)
@@ -357,5 +353,23 @@ class AutoCrudService
                 $item->setAttribute($key, $value);
             }
         }
+    }
+
+    protected function success($message, $data = null)
+    {
+        return [
+            'success' => true,
+            'message' => $message,
+            'data' => $data,
+        ];
+    }
+
+    protected function failure($message, $data = null)
+    {
+        return [
+            'success' => false,
+            'message' => $message,
+            'data' => $data,
+        ];
     }
 }

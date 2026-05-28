@@ -71,12 +71,20 @@ class ApiAutoCrudController extends Controller
     {
         $result = $this->crud->store($request, $model);
 
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
+
         return $this->responses->success($result['data'], $result['message'], [], 201);
     }
 
     public function update(DynamicFormRequest $request, $model, $id)
     {
         $result = $this->crud->update($request, $model, $id);
+
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
 
         return $this->responses->success($result['data'], $result['message']);
     }
@@ -85,6 +93,10 @@ class ApiAutoCrudController extends Controller
     {
         $result = $this->crud->destroy($model, $id);
 
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
+
         return $this->responses->success($result['data'], $result['message']);
     }
 
@@ -92,12 +104,20 @@ class ApiAutoCrudController extends Controller
     {
         $result = $this->crud->destroyPermanent($model, $id);
 
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
+
         return $this->responses->success($result['data'], $result['message']);
     }
 
     public function restore($model, $id)
     {
         $result = $this->crud->restore($model, $id);
+
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
 
         return $this->responses->success($result['data'], $result['message']);
     }
@@ -111,6 +131,10 @@ class ApiAutoCrudController extends Controller
     {
         $result = $this->crud->bind($request, $model, $id, $externalRelation, $item);
 
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
+
         return $this->responses->success($result['data'], $result['message']);
     }
 
@@ -118,12 +142,20 @@ class ApiAutoCrudController extends Controller
     {
         $result = $this->crud->updatePivot($request, $model, $id, $externalRelation, $item);
 
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
+
         return $this->responses->success($result['data'], $result['message']);
     }
 
     public function unbind($model, $id, $externalRelation, $item)
     {
         $result = $this->crud->unbind($model, $id, $externalRelation, $item);
+
+        if (!$result['success']) {
+            return $this->responses->error($result['message'], [], 422);
+        }
 
         return $this->responses->success($result['data'], $result['message']);
     }

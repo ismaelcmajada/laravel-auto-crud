@@ -31,6 +31,10 @@ class AutoCrudController extends Controller
     {
         $result = $this->crud->store($request, $model);
 
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
+
         return Redirect::back()->with([
             'success' => $result['message'],
             'data' => $result['data'],
@@ -40,6 +44,10 @@ class AutoCrudController extends Controller
     public function update(DynamicFormRequest $request, $model, $id)
     {
         $result = $this->crud->update($request, $model, $id);
+
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
 
         return Redirect::back()->with([
             'success' => $result['message'],
@@ -51,6 +59,10 @@ class AutoCrudController extends Controller
     {
         $result = $this->crud->destroy($model, $id);
 
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
+
         return Redirect::back()->with('success', $result['message']);
     }
 
@@ -58,12 +70,20 @@ class AutoCrudController extends Controller
     {
         $result = $this->crud->destroyPermanent($model, $id);
 
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
+
         return Redirect::back()->with('success', $result['message']);
     }
 
     public function restore($model, $id)
     {
         $result = $this->crud->restore($model, $id);
+
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
 
         return Redirect::back()->with('success', $result['message']);
     }
@@ -77,6 +97,10 @@ class AutoCrudController extends Controller
     {
         $result = $this->crud->bind($request, $model, $id, $externalRelation, $item);
 
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
+
         return Redirect::back()->with([
             'success' => $result['message'],
             'data' => $result['data'],
@@ -86,6 +110,10 @@ class AutoCrudController extends Controller
     public function updatePivot(DynamicFormRequest $request, $model, $id, $externalRelation, $item)
     {
         $result = $this->crud->updatePivot($request, $model, $id, $externalRelation, $item);
+
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
 
         return Redirect::back()->with([
             'success' => $result['message'],
@@ -97,6 +125,10 @@ class AutoCrudController extends Controller
     {
         $result = $this->crud->unbind($model, $id, $externalRelation, $item);
 
+        if (!$result['success']) {
+            return $this->failedResponse($result);
+        }
+
         return Redirect::back()->with([
             'success' => $result['message'],
             'data' => $result['data'],
@@ -106,5 +138,14 @@ class AutoCrudController extends Controller
     public function setRecord($model, $element_id, $action)
     {
         $this->crud->setRecord($model, $element_id, $action);
+    }
+
+    protected function failedResponse(array $result)
+    {
+        if (session()->has('errors')) {
+            return Redirect::back();
+        }
+
+        return Redirect::back()->withErrors(['error' => $result['message']]);
     }
 }
