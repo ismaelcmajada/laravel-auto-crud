@@ -4,11 +4,18 @@ namespace Ismaelcmajada\LaravelAutoCrud;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Ismaelcmajada\LaravelAutoCrud\Console\Commands\AiContextCommand;
 
 class AutoCrudServiceProvider extends ServiceProvider
 {
     public function boot()
     {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                AiContextCommand::class,
+            ]);
+        }
+
         // Registrar el middleware
         $this->registerMiddleware();
 
