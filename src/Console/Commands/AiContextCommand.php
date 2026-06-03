@@ -302,9 +302,20 @@ class AiContextCommand extends Command
         $schema = Schema::getFacadeRoot();
 
         if ($schema && method_exists($schema, 'getTables')) {
-            return array_map(function ($table) {
-                return is_array($table) ? ($table['name'] ?? $table['table'] ?? reset($table)) : (string) $table;
-            }, $schema->getTables());
+            $database = DB::connection()->getDatabaseName();
+            $tables = [];
+
+            foreach ($schema->getTables() as $table) {
+                $tableName = $this->tableNameForCurrentDatabase($table, $database);
+
+                if ($tableName) {
+                    $tables[] = $tableName;
+                }
+            }
+
+            sort($tables);
+
+            return array_values(array_unique($tables));
         }
 
         $driver = DB::connection()->getDriverName();
@@ -325,6 +336,42 @@ class AiContextCommand extends Command
             $values = array_values((array) $row);
             return $values[0];
         }, DB::select('SHOW TABLES'));
+    }
+
+    protected function tableNameForCurrentDatabase($table, $database)
+    {
+        if (!is_array($table)) {
+            return $this->normalizeTableName((string) $table, $database);
+        }
+
+        $schema = isset($table['schema']) ? $table['schema'] : (isset($table['database']) ? $table['database'] : null);
+
+        if ($schema && $database && $schema !== $database) {
+            return null;
+        }
+
+        $name = isset($table['name']) ? $table['name'] : (isset($table['table']) ? $table['table'] : reset($table));
+
+        return $this->normalizeTableName((string) $name, $database);
+    }
+
+    protected function normalizeTableName($table, $database)
+    {
+        $table = trim($table, '`"');
+
+        if (strpos($table, '.') === false) {
+            return $table;
+        }
+
+        list($schema, $name) = explode('.', $table, 2);
+        $schema = trim($schema, '`"');
+        $name = trim($name, '`"');
+
+        if ($database && $schema !== $database) {
+            return null;
+        }
+
+        return $name;
     }
 
     protected function getColumns($table)
