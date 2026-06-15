@@ -105,15 +105,25 @@ const handlePivotStoreShortcutSuccess = (field, flash) => {
   if (!createdItem) return
 
   if (field.relation.serverSide) {
-    // Para serverSide: guardar el item creado y asignar el id
+    // Para serverSide: guardar el item creado para pasarlo al autocomplete-server
+    // y asignar el id tanto en el formulario de añadir como en el de edición
     storePivotShortcutCreatedItems.value[field.field] = createdItem
     pivotData.value[field.field] = createdItem.id
+    pivotEditData.value[field.field] = createdItem.id
   } else {
     // Para no-serverSide: recargar items y asignar el id después de que carguen
     autoCrud.get(`${field.relation.endPoint}/all`).then((response) => {
-      relations.value[field.field] = response.data
+      const items = response.data
+      // Asegurarse de que el item creado está en la lista para que el
+      // v-autocomplete pueda mostrar su título aunque el GET /all no lo
+      // incluya (p.ej. por filtros en el backend)
+      if (!items.some((i) => i.id === createdItem.id)) {
+        items.unshift(createdItem)
+      }
+      relations.value[field.field] = items
       nextTick(() => {
         pivotData.value[field.field] = createdItem.id
+        pivotEditData.value[field.field] = createdItem.id
       })
     })
   }
@@ -941,6 +951,7 @@ watch(
             density="compact"
             :end-point="field.relation.endPoint"
             :item="
+              storePivotShortcutCreatedItems[field.field] ||
               serverSideRelationItems[field.field]?.[pivotEditData[field.field]]
             "
             :filtered-items="props.filteredItems?.[field.relation.relation]"
