@@ -226,7 +226,9 @@ const addItem = () => {
           })
           pivotData.value = newPivotData
           selectedItem.value = null
-          getItems()
+          if (!props.externalRelation.serverSide) {
+            getItems()
+          }
           emit("bound")
     })
   }
@@ -270,7 +272,9 @@ const removeItem = (relationId) => {
   ).then((response) => {
         item.value = response.flash.data
         selectedItem.value = null
-        getItems()
+        if (!props.externalRelation.serverSide) {
+          getItems()
+        }
         emit("unbound")
   })
 }
