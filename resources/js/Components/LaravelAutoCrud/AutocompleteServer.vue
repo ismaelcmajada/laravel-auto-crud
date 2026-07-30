@@ -34,7 +34,7 @@ watch(
   (newItem) => {
     if (newItem && newItem.id !== selectedItem.value?.id) {
       selectedItem.value = newItem
-      // Inyectar el item en la lista para que el autocomplete lo muestre
+      // Inyectar el item en la lista para que el autocomplete lo muestrea
       if (!items.value.some((i) => i.id === newItem.id)) {
         items.value = [newItem, ...items.value]
       }
