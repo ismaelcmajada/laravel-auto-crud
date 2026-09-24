@@ -1,0 +1,20 @@
+# AgentHub portable project configuration.
+# Commit this file: any machine that clones the repository can run
+# `agentctl register` and get the same agent setup.
+
+id: laravel-auto-crud
+name: laravel autocrud
+stack:
+  backend: php
+  backend_version: "7.2"
+git:
+  default_branch: main
+  repository: git@github.com:ismaelcmajada/laravel-auto-crud.git
+commands:
+  install: composer install
+agent:
+  instructions: AGENTS.md
+permissions:
+  migrations: true
+  push_main: false
+  production_access: false
