@@ -70,6 +70,33 @@ const loadedModels = ref({})
 // Clonamos `item` para manipularlo localmente
 const item = ref(props.item)
 
+// Contexto que se envía al autocompletado server-side para que el backend
+// pueda filtrar antes del límite (p. ej. fechas de la reserva). Las claves se
+// declaran en `autocompleteContext` de la relación y se toman del formulario.
+const autocompleteContext = computed(() => {
+  const keys = props.externalRelation.autocompleteContext
+
+  if (!Array.isArray(keys) || keys.length === 0) {
+    return null
+  }
+
+  const context = {}
+
+  keys.forEach((key) => {
+    const value = props.formData?.[key]
+
+    if (value !== undefined) {
+      context[key] = value
+    }
+  })
+
+  if (item.value?.id) {
+    context.item_id = item.value.id
+  }
+
+  return context
+})
+
 const handleExternalStoreShortcutSuccess = async (flash) => {
   const createdItem = flash.data
   if (!createdItem) return
@@ -516,6 +543,7 @@ watch(
             props.filteredItems?.[props.externalRelation.relation]
           "
           :form-data="props.formData"
+          :context="autocompleteContext"
           @update:modelValue="addItem"
         >
           <!-- storeShortcut para la relación principal -->
@@ -561,6 +589,7 @@ watch(
             props.filteredItems?.[props.externalRelation.relation]
           "
           :form-data="props.formData"
+          :context="autocompleteContext"
           :item="storeExternalShortcutCreatedItem"
         >
           <!-- storeShortcut para la relación principal -->
@@ -666,6 +695,7 @@ watch(
           :end-point="field.relation.endPoint"
           :filtered-items="props.filteredItems?.[field.relation.relation]"
           :form-data="props.formData"
+          :context="autocompleteContext"
           :item="storePivotShortcutCreatedItems[field.field] || null"
         >
           <template v-if="field.relation.storeShortcut" v-slot:prepend>
@@ -960,6 +990,7 @@ watch(
             "
             :filtered-items="props.filteredItems?.[field.relation.relation]"
             :form-data="props.formData"
+            :context="autocompleteContext"
           >
             <template v-if="field.relation.storeShortcut" v-slot:prepend>
               <v-btn

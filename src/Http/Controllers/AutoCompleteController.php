@@ -34,6 +34,11 @@ class AutoCompleteController extends Controller
     {
         $search = Request::get('search', '');
         $keyField = Request::get('key', null);
+        $context = Request::input('context', []);
+
+        if (!is_array($context)) {
+            $context = [];
+        }
 
         $modelInstance = $this->getModel($model);
         $mainTable = $modelInstance->getTable();
@@ -52,9 +57,17 @@ class AutoCompleteController extends Controller
             $this->applyDynamicSearch($query, $relationInfo, $formKey, $search);
         }
 
+        // Filtrado extra definido por el modelo relacionado, antes del limit.
+        // Permite, por ejemplo, devolver solo registros disponibles para el
+        // contexto del formulario (fechas de la reserva) en lugar de traer
+        // N resultados que el frontend acabaría descartando.
+        if (method_exists($modelInstance, 'scopeAutocompleteContext')) {
+            $query->autocompleteContext($context);
+        }
 
-        $items = $query->limit(6)->get();
+        $limit = (int) config('laravel-auto-crud.autocomplete_limit', 6);
 
+        $items = $query->limit($limit > 0 ? $limit : 6)->get();
 
         return ['autocompleteItems' => $items];
     }

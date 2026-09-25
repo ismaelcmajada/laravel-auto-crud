@@ -215,6 +215,42 @@ protected static $externalRelations = [
 | `pivotFields` | array  | No       | Fields for the pivot table        |
 | `table`       | bool   | No       | Show in tables                    |
 | `formKey`     | string | No       | Display template                  |
+| `serverSide`  | bool   | No       | Resolve `formKey`/`tableKey` on backend |
+| `storeShortcut` | bool | No     | Allow quick creation from the autocomplete |
+| `autocompleteContext` | array | No | Form keys sent to the server-side autocomplete |
+
+### Server-side Autocomplete Context
+
+The server-side autocomplete applies `config('laravel-auto-crud.autocomplete_limit')` (6 by default) **after** the search. If the frontend filters those results afterwards (e.g. by availability), the list can end up empty even when valid records exist beyond the limit.
+
+To filter in the backend **before** the limit, declare the form keys to send as context:
+
+```php
+[
+    'relation' => 'vehicles',
+    'name' => 'Vehículos',
+    'model' => Vehicle::class,
+    'serverSide' => true,
+    'autocompleteContext' => ['start_date', 'end_date'],
+]
+```
+
+And define `scopeAutocompleteContext` on the **related** model. It receives the sent context (plus `item_id` with the id of the record being edited) and runs before the limit:
+
+```php
+public function scopeAutocompleteContext($query, array $context = [])
+{
+    if (empty($context['start_date']) || empty($context['end_date'])) {
+        return $query;
+    }
+
+    return $query->whereDoesntHave('reservations', function ($query) use ($context) {
+        $query->whereNotIn('state', ['cancelada', 'devuelta'])
+            ->where('start_date', '<=', $context['end_date'])
+            ->where('end_date', '>=', $context['start_date']);
+    });
+}
+```
 
 ## Automatic Relationship Handling
 

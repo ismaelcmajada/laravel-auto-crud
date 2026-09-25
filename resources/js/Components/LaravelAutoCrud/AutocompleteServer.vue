@@ -21,6 +21,7 @@ const props = defineProps([
   "items",
   "filteredItems",
   "formData",
+  "context",
 ])
 const emit = defineEmits(["update:modelValue"])
 
@@ -63,11 +64,17 @@ const debounceLoadAutocompleteItems = debounce((search) => {
 
   const generation = ++requestGeneration
 
+  const payload = {
+    search: search,
+    key: props.itemTitle,
+  }
+
+  if (props.context) {
+    payload.context = props.context
+  }
+
   autoCrud
-    .post(`${props.endPoint}/load-autocomplete-items`, {
-      search: search,
-      key: props.itemTitle,
-    })
+    .post(`${props.endPoint}/load-autocomplete-items`, payload)
     .then((response) => {
       if (generation !== requestGeneration) return
 
